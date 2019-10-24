@@ -15,6 +15,8 @@ while True:
 
     upperCaseMessage = message.upper()
 
+    print(upperCaseMessage)
+
     connectionSocket.send(upperCaseMessage.encode())
 
     connectionSocket.close()
