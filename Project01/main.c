@@ -1,6 +1,6 @@
 /* Source Citation:
  *  - Flushing fgets buffer: https://stackoverflow.com/a/38768287
- *
+ *  - Beej's TCP Client Src: https://beej.us/guide/bgnet/html/multi/clientserver.html#simpleclient
  */
 
 // Project Header Files
@@ -57,19 +57,16 @@ int main(int argc, char * argv[]) {
             }
         }
     } while(isValid(handleBuffer) == 0);
-
     printf("Your online handle has been set to: %s\n\n", handleBuffer);
+
+
 
     /* Server Connection
      */
-
     char * serverName = "127.0.0.1";
-    char * portNum = "12000";
-
-    char * message = "hello world";
+    char * portNum = "12001";
 
     int sockfd, numbytes;
-    char buffer[501];
     struct addrinfo hints, *servinfo, *p;
     int rv;
 
@@ -80,11 +77,13 @@ int main(int argc, char * argv[]) {
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
+    // Set up the address
     if((rv = getaddrinfo(serverName, portNum, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
     }
 
+    // Make the connection between the sockets
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
             perror("client: socket");
@@ -104,16 +103,33 @@ int main(int argc, char * argv[]) {
         return 2;
     }
 
+    // Binding our client to the address
     inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
-    printf("client: connecting to %s\n", s);
-
     freeaddrinfo(servinfo);
 
-    write(sockfd, message, strlen(message));
+    printf("client: connecting to %s\n", s);
+    int flag = 1;
+    while(flag == 1) {
+        char buffer[501] = "";
+        char newmsg[501] = "";
+        printf("Send a message to the server: ");
+        fgets(newmsg, 501, stdin);
 
-    read(sockfd, buffer, 501);
+        // Send to Server
+        send(sockfd, newmsg, strlen(newmsg), 0);
 
-    printf("Server responded with: %s", buffer);
+        // Read from Server
+        read(sockfd, buffer, sizeof(buffer));
 
+        // Print Result
+        printf("%s\n", buffer);
+
+        // Gracefully Exit
+        if(strstr(buffer, "./quit")) {
+            flag = 0;
+        }
+    }
+    printf("Quit command received from server - terminating");
+    close(sockfd);
     return 0;
 }

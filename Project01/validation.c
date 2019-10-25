@@ -30,6 +30,8 @@ int isValid(char * string) {
     memset(errorKey, 0, errorKeyLength*sizeof(int));
 
     // Is the input blank? - error key 0
+    printf("%lu\n", strlen(string));
+
     if(strlen(string) - 1 == 0) {
         errorKey[0] = 1;
         errorFlag = 1;
