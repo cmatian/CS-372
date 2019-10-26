@@ -40,9 +40,12 @@ int main(int argc, char * argv[]) {
     printf("Hello there, please create a name for your online handle.\n");
 
     do {
+
         printf(">> ");
         fgets(handleBuffer, HANDLE_BUFFER_SIZE, stdin);
+
     } while(isValid(handleBuffer) == 0);
+
     printf("Your online handle has been set to: %s\n\n", handleBuffer);
 
 

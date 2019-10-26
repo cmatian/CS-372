@@ -34,7 +34,8 @@ int isValid(char * string) {
         return 0;
     }
 
-    if(strcmp(string, "\n") && strlen(string) < 1) {
+    if(strcmp(string, "\n") == 0) {
+        printf("Blank inputs are not allowed.");
         errorKey[0] = 1;
         return printErrors(errorKey, errorKeyLength);
     }
