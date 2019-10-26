@@ -2,6 +2,7 @@
 // Christopher Matian 10/23/2019
 
 // Project Header Files
+#include <assert.h>
 #include "validation.h"
 
 /*
@@ -13,10 +14,10 @@ typedef struct {
 } error;
 
 error errors[4] = {
-        {"Blank handles are not allowed."},
-        {"The first character cannot be a number."},
-        {"spaces are not allowed."},
-        {"special characters are not allowed."}
+    {"Blank handles are not allowed."},
+    {"The first character cannot be a number."},
+    {"spaces are not allowed."},
+    {"special characters are not allowed."}
 };
 
 int isValid(char * string) {
@@ -24,17 +25,18 @@ int isValid(char * string) {
     // 0 = No Error
     // 1 = Error
     int errorKeyLength = 4;
-    int errorKey[] = {
-        0, 0, 0, 0
+    int errorKey[4] = {
+            0, 0, 0, 0
     };
-    memset(errorKey, 0, errorKeyLength*sizeof(int));
 
-    // Is the input blank? - error key 0
-    printf("%lu\n", strlen(string));
+    if(strlen(string) > MAX_HANDLE_SIZE) {
+        printf("Your input can only be 10 character's long\n");
+        return 0;
+    }
 
-    if(strlen(string) - 1 == 0) {
+    if(strcmp(string, "\n") && strlen(string) < 1) {
         errorKey[0] = 1;
-        errorFlag = 1;
+        return printErrors(errorKey, errorKeyLength);
     }
 
     // Is the first character a number? - error key 1
@@ -43,7 +45,7 @@ int isValid(char * string) {
         errorFlag = 1;
     }
 
-   for(int i = 0; i < strlen(string) - 1; i++) {
+    for(int i = 0; i < strlen(string) - 1; i++) {
        // Is the character a space? - error key 2
        if(isspace(string[i])) {
            errorKey[2] = 1;
@@ -57,15 +59,15 @@ int isValid(char * string) {
            errorFlag = 1;
            continue;
        }
-   }
+    }
 
-   // Check if any error keys were set
-   if(errorFlag == 1) {
-       return printErrors(errorKey, errorKeyLength);
-   }
+    // Check if any error keys were set
+    if(errorFlag == 1) {
+        return printErrors(errorKey, errorKeyLength);
+    }
 
-   // Valid
-   return 1;
+    // Valid
+    return 1;
 }
 
 int printErrors(int * errorKey, int length) {

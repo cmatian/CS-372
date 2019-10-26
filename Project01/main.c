@@ -27,9 +27,8 @@ void * get_in_addr(struct sockaddr * sa) {
 }
 
 int main(int argc, char * argv[]) {
-
     // User Handle Buffer (No More than 16 characters
-    char handleBuffer[MAX_HANDLE_SIZE];
+    char handleBuffer[HANDLE_BUFFER_SIZE];
 
     /* Capture User Input for user handle
      * Rules:
@@ -38,24 +37,11 @@ int main(int argc, char * argv[]) {
      *      - No special characters
      *      - First character cannot be a number
      */
-    printf("Hello there, please create a name for your online handle\n"
-           "Inputs greater than 16 characters will be trimmed automatically.\n\n");
+    printf("Hello there, please create a name for your online handle.\n");
+
     do {
-        printf(">>");
-        if (fgets(handleBuffer, MAX_HANDLE_SIZE, stdin)) {
-            // Find the newline
-            char * newLine = strchr(handleBuffer, '\n');
-            if (newLine) {
-                *newLine = 0;
-            } else {
-                /*
-                 * Clear up to the newline. This will prevent error spam when you input a huge line of
-                 * invalid inputs like 40 '*' marks.
-                 */
-                scanf("%*[^\n]");
-                scanf("%*c");
-            }
-        }
+        printf(">> ");
+        fgets(handleBuffer, HANDLE_BUFFER_SIZE, stdin);
     } while(isValid(handleBuffer) == 0);
     printf("Your online handle has been set to: %s\n\n", handleBuffer);
 
