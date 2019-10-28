@@ -4,15 +4,6 @@
 // Linked Header File
 #include "validation.h"
 
-/*
- * int flag = set the flag to 1 if there is an error of this type
- * char * error = string describing the error
-*/
-typedef struct {
-    int flag;
-    char * error;
-} error;
-
 // Set errors isValid for quick reset on each loop
 error errors[ERROR_KEY_LENGTH] = {
         {0, "Blank handle names are not allowed."}, // 0
@@ -22,7 +13,14 @@ error errors[ERROR_KEY_LENGTH] = {
         {0, "Special characters are not allowed."} // 4
 };
 
-int isValid(char * string) {
+int isArgValid(int argc) {
+    if(argc < 3) {
+        return 0;
+    }
+    return 1;
+}
+
+int isHandleValid(char * string) {
 
     int errorFlag = 0;
 

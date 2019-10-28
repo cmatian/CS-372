@@ -20,11 +20,24 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <assert.h>
 
 // MACRO Definitions
 #define HANDLE_BUFFER_SIZE 1024
+#define SEND_BUFFER_SIZE 1024
+#define RECV_BUFFER_SIZE 1024
 
 int main(int argc, char * argv[]) {
+
+    /* Validate Argument Count
+     * If there is less than 3 args we will exit the program immediately
+     */
+    int argumentValidation = isArgValid(argc);
+    if(argumentValidation == 0) {
+        fprintf(stderr, "Incorrect number of arguments");
+        exit(1);
+    }
+
     // User Handle Buffer (No More than 16 characters
     char handleBuffer[HANDLE_BUFFER_SIZE];
 
@@ -41,69 +54,47 @@ int main(int argc, char * argv[]) {
         printf(">> ");
         fgets(handleBuffer, HANDLE_BUFFER_SIZE, stdin);
 
-    } while(isValid(handleBuffer) == 0);
+    } while(isHandleValid(handleBuffer) == 0);
+    char handleName[MAX_HANDLE_SIZE];
+    strcpy(handleName, handleBuffer); // copy handle to smaller char array
+    printf("Your online handle has been set to: %s\n", handleName);
 
-    printf("Your online handle has been set to: %s\n\n", handleBuffer);
+    /* Server Address and Port Initialization
+     * This will just initialize the server struct address name and port information strings
+     * */
+    struct server server;
+    set_addr_and_port(&server, argv); // Set address and port
 
-    /* Server Connection
+    /* socket is used for send and recv statements.
+     * connectionResult is a simple validation for successful connections.
      */
-    char * serverName = "127.0.0.1";
-    char * portNum = "12001";
+    int socket;
+    int connectionResult;
 
-    int sockfd, numbytes;
-    struct addrinfo hints, *servinfo, *p;
-    int rv;
+    /* tether function will do the following:
+     * 1. Create the address linked list,
+     * 2. Create the client socket
+     * 3. Connect the client socket to the server socket
+     * 4. Bind the two sockets to each other.
+     */
+    if((connectionResult = tether(&server, &socket)) != 0) {
+        return connectionResult;
+    };
 
-    char s[INET6_ADDRSTRLEN];
-
-    memset(&hints, 0, sizeof(hints));
-
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-
-    // Set up the address
-    if((rv = getaddrinfo(serverName, portNum, &hints, &servinfo)) != 0) {
-        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-        return 1;
-    }
-
-    // Make the connection between the sockets
-    for(p = servinfo; p != NULL; p = p->ai_next) {
-        if((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-            perror("client: socket");
-            continue;
-        }
-
-        if(connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-            close(sockfd);
-            perror("clients: connect");
-            continue;
-        }
-        break;
-    }
-
-    if(p == NULL) {
-        fprintf(stderr, "client: failed to connect\n");
-        return 2;
-    }
-
-    // Binding our client to the address
-    inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
-    freeaddrinfo(servinfo);
-
-    printf("client: connecting to %s\n", s);
+    // Create a function for messaging between servers in different header/source files
+    // do-while loop?
     int flag = 1;
     while(flag == 1) {
-        char buffer[501] = "";
-        char newmsg[501] = "";
+        char newmsg[SEND_BUFFER_SIZE] = "";
+        char buffer[RECV_BUFFER_SIZE] = "";
         printf("Send a message to the server: ");
-        fgets(newmsg, 501, stdin);
+        fgets(newmsg, SEND_BUFFER_SIZE, stdin);
 
         // Send to Server
-        send(sockfd, newmsg, strlen(newmsg), 0);
+        send(socket, newmsg, strlen(newmsg), 0);
 
         // Read from Server
-        read(sockfd, buffer, sizeof(buffer));
+        read(socket, buffer, sizeof(buffer));
 
         // Print Result
         printf("%s\n", buffer);
@@ -114,6 +105,6 @@ int main(int argc, char * argv[]) {
         }
     }
     printf("Quit command received from server - terminating");
-    close(sockfd);
+    close(socket);
     return 0;
 }
