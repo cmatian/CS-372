@@ -9,12 +9,13 @@
 #ifndef validation
 #define validation
 
+#define ERROR_KEY_LENGTH 5
 #define MAX_HANDLE_SIZE 10
-#define HANDLE_BUFFER_SIZE 1024
-
 
 int isValid(char *);
 
-int printErrors(int *, int);
+int printErrors();
+
+void resetErrors();
 
 #endif

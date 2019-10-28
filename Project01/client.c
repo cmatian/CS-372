@@ -1,10 +1,13 @@
+// Project 1 TCP Client and Server
+// Christopher Matian 10/23/2019
+
 /* Source Citation:
- *  - Flushing fgets buffer: https://stackoverflow.com/a/38768287
  *  - Beej's TCP Client Src: https://beej.us/guide/bgnet/html/multi/clientserver.html#simpleclient
  */
 
 // Project Header Files
 #include "validation.h"
+#include "connection.h"
 
 // Project Library Imports
 #include <stdio.h>
@@ -18,13 +21,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-void * get_in_addr(struct sockaddr * sa) {
-    if(sa->sa_family == AF_INET) {
-        return &((struct sockaddr_in *)sa)->sin_addr;
-    }
-
-    return &(((struct sockaddr_in6 *)sa)->sin6_addr);
-}
+// MACRO Definitions
+#define HANDLE_BUFFER_SIZE 1024
 
 int main(int argc, char * argv[]) {
     // User Handle Buffer (No More than 16 characters
@@ -38,7 +36,6 @@ int main(int argc, char * argv[]) {
      *      - First character cannot be a number
      */
     printf("Hello there, please create a name for your online handle.\n");
-
     do {
 
         printf(">> ");
@@ -47,8 +44,6 @@ int main(int argc, char * argv[]) {
     } while(isValid(handleBuffer) == 0);
 
     printf("Your online handle has been set to: %s\n\n", handleBuffer);
-
-
 
     /* Server Connection
      */
