@@ -1,8 +1,8 @@
-CC=GCC
-CFLAGS=-std=c11 -E
+CC=gcc
+CFLAGS=-std=gnu11
 
 make: client.o connection.o validation.o
-	$(CC) -o client *.c
+	$(CC) $(CFLAGS) -o client client.c connection.c validation.c
 
 clean:
 	-rm -f *.o *.exe

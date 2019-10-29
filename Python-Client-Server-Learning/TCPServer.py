@@ -1,13 +1,19 @@
 from socket import *
+import sys
 
-serverPort = 12001
+if(len(sys.argv) < 2):
+    print("You need to specify a PORT argument...")
+    exit(1)
+
+serverHost = gethostname()
+serverPort = int(sys.argv[1])
 serverSocket = socket(AF_INET, SOCK_STREAM)
 
 serverSocket.bind(('', serverPort))
 
 serverSocket.listen(1)
 
-print('The Server is ready to receive...')
+print(f'The server at HOST "{serverHost}" is ready to receive on PORT "{serverPort}"...')
 nullterm = '\0'
 
 flag = 1
