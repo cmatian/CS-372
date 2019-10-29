@@ -10,17 +10,7 @@
 #include "connection.h"
 
 // Project Library Imports
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <assert.h>
+
 
 // MACRO Definitions
 #define HANDLE_BUFFER_SIZE 1024
@@ -94,6 +84,8 @@ int main(int argc, char * argv[]) {
         send(socket, newmsg, strlen(newmsg), 0);
 
         // Read from Server
+        // This should usually wait for a response from the server (socket will block here until it gets a response)
+        // Might need to implement a while loop here
         read(socket, buffer, sizeof(buffer));
 
         // Print Result

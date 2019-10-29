@@ -2,5 +2,6 @@ venv
 .idea
 *.o
 *.exe
+*.out
 CMakeLists.txt
 cmake-build-debug
