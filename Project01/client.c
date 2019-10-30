@@ -14,8 +14,8 @@
 
 // MACRO Definitions
 #define HANDLE_BUFFER_SIZE 1024
-#define SEND_BUFFER_SIZE 1024
-#define RECV_BUFFER_SIZE 1024
+#define SEND_BUFFER_SIZE 501
+#define RECV_BUFFER_SIZE 501
 
 int main(int argc, char * argv[]) {
 
@@ -41,12 +41,17 @@ int main(int argc, char * argv[]) {
     printf("Hello there, please create a name for your online handle.\n");
     do {
 
-        printf(">> ");
+        printf(">>");
         fgets(handleBuffer, HANDLE_BUFFER_SIZE, stdin);
 
     } while(isHandleValid(handleBuffer) == 0);
+    // Copy handle to smaller char array
     char handleName[MAX_HANDLE_SIZE];
-    strcpy(handleName, handleBuffer); // copy handle to smaller char array
+    int handleLength = strlen(handleBuffer);
+    strcpy(handleName, handleBuffer);
+    // Replace trailing newline with null terminator instead
+    handleName[handleLength - 1] = '\0';
+
     printf("Your online handle has been set to: %s\n", handleName);
 
     /* Server Address and Port Initialization
@@ -76,23 +81,37 @@ int main(int argc, char * argv[]) {
     int flag = 1;
     while(flag == 1) {
         char newmsg[SEND_BUFFER_SIZE] = "";
-        char buffer[RECV_BUFFER_SIZE] = "";
-        printf("Send a message to the server: ");
+        char outmsg[SEND_BUFFER_SIZE + MAX_HANDLE_SIZE];
+        char * outHandlePtr = handleName;
+        char * newmsgPtr = newmsg;
+        char * outBufferPtr = outmsg;
+        char inBuffer[RECV_BUFFER_SIZE] = "";
+
+        bzero(newmsg, SEND_BUFFER_SIZE);
+        bzero(outmsg, SEND_BUFFER_SIZE + MAX_HANDLE_SIZE);
+
+        printf("%s >>", handleName);
         fgets(newmsg, SEND_BUFFER_SIZE, stdin);
 
+        // Generate outmessage combining handle with newmsg
+        // The guy who designed C string concatenation should be tried for crimes against humanity
+        outBufferPtr = stpcpy(outBufferPtr, outHandlePtr);
+        outBufferPtr = stpcpy(outBufferPtr, ">> ");
+        outBufferPtr = stpcpy(outBufferPtr, newmsgPtr);
+
         // Send to Server
-        send(socket, newmsg, strlen(newmsg), 0);
+        send(socket, outmsg, strlen(outmsg), 0);
 
         // Read from Server
         // This should usually wait for a response from the server (socket will block here until it gets a response)
         // Might need to implement a while loop here
-        read(socket, buffer, sizeof(buffer));
+        read(socket, inBuffer, sizeof(inBuffer));
 
         // Print Result
-        printf("%s\n", buffer);
+        printf("%s\n", inBuffer);
 
         // Gracefully Exit
-        if(strstr(buffer, "./quit")) {
+        if(strstr(inBuffer, "./quit")) {
             flag = 0;
         }
     }

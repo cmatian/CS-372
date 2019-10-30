@@ -34,7 +34,7 @@ int isHandleValid(char * string) {
 
     // Handle names exceeding 10 characters
     // EK = 1
-    if(strlen(string) > MAX_HANDLE_SIZE) {
+    if(strlen(string) > MAX_HANDLE_SIZE + 1) {
         errors[1].flag = 1;
         errorFlag = 1;
     }
