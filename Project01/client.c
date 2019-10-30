@@ -3,13 +3,12 @@
 
 /* Source Citation:
  *  - Beej's TCP Client Src: https://beej.us/guide/bgnet/html/multi/clientserver.html#simpleclient
+ *      - I used his starter code to make the connection between the client and server.
  */
 
 // Project Header Files
 #include "validation.h"
 #include "connection.h"
-
-// Project Library Imports
 
 
 // MACRO Definitions
@@ -30,7 +29,6 @@ int main(int argc, char * argv[]) {
 
     // User Handle Buffer (No More than 16 characters
     char handleBuffer[HANDLE_BUFFER_SIZE];
-
     /* Capture User Input for user handle
      * Rules:
      *      - No spaces
@@ -51,7 +49,6 @@ int main(int argc, char * argv[]) {
     strcpy(handleName, handleBuffer);
     // Replace trailing newline with null terminator instead
     handleName[handleLength - 1] = '\0';
-
     printf("Your online handle has been set to: %s\n", handleName);
 
     /* Server Address and Port Initialization
@@ -78,8 +75,7 @@ int main(int argc, char * argv[]) {
 
     // Create a function for messaging between servers in different header/source files
     // do-while loop?
-    int flag = 1;
-    while(flag == 1) {
+    while(1) {
         char newmsg[SEND_BUFFER_SIZE] = "";
         char outmsg[SEND_BUFFER_SIZE + MAX_HANDLE_SIZE];
         char * outHandlePtr = handleName;
@@ -87,35 +83,46 @@ int main(int argc, char * argv[]) {
         char * outBufferPtr = outmsg;
         char inBuffer[RECV_BUFFER_SIZE] = "";
 
-        bzero(newmsg, SEND_BUFFER_SIZE);
-        bzero(outmsg, SEND_BUFFER_SIZE + MAX_HANDLE_SIZE);
-
-        printf("%s >>", handleName);
+        printf("%s >> ", handleName);
         fgets(newmsg, SEND_BUFFER_SIZE, stdin);
 
         // Generate outmessage combining handle with newmsg
-        // The guy who designed C string concatenation should be tried for crimes against humanity
+        // This code will basically concatenate: handle name + >> + newmsg
         outBufferPtr = stpcpy(outBufferPtr, outHandlePtr);
-        outBufferPtr = stpcpy(outBufferPtr, ">> ");
+        outBufferPtr = stpcpy(outBufferPtr, " >> ");
         outBufferPtr = stpcpy(outBufferPtr, newmsgPtr);
 
-        // Send to Server
+        // Send message to the server
         send(socket, outmsg, strlen(outmsg), 0);
 
         // Read from Server
         // This should usually wait for a response from the server (socket will block here until it gets a response)
-        // Might need to implement a while loop here
-        read(socket, inBuffer, sizeof(inBuffer));
 
-        // Print Result
+        int result = read(socket, inBuffer, sizeof(inBuffer));
+        /* This indicates that there was an error.
+         * The logic here is that the server is always sending back at least ~12 bytes of data (blank
+         * input still has the name preprended to it). When the server terminates via CTRL+C, we can catch it
+         * because the result will have a value of 0. We can exit gracefully from here.
+         */
+        if(result == 0) {
+            printf("The server seems to have been terminated (^C) - gracefully closing the client.");
+            break;
+        }
+
+        if (result < 0) {
+            printf("There was an issue with the server - gracefully exiting the client.");
+            break;
+        }
+
+        // Print the message from the server
         printf("%s\n", inBuffer);
 
-        // Gracefully Exit
-        if(strstr(inBuffer, "./quit")) {
-            flag = 0;
+        // Gracefully exit if the server tells us to quit
+        if(strstr(inBuffer, "./quit") || strstr(outmsg, "./quit")) {
+            printf("Quit command received from server - terminating the client.");
+            break;
         }
     }
-    printf("Quit command received from server - terminating");
     close(socket);
     return 0;
 }
