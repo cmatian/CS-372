@@ -9,6 +9,9 @@
 /* Source Citation:
  *  - Beej's TCP Client Src: https://beej.us/guide/bgnet/html/multi/clientserver.html#simpleclient
  *      - I used his starter code to make the connection between the client and server.
+ *
+ *  - Makefile Sample: https://www.gribblelab.org/CBootCamp/12_Compiling_linking_Makefile_header_files.html
+ *      - Modified his example for my makefile.
  */
 
 // Project Header Files
@@ -135,7 +138,7 @@ int main(int argc, char * argv[]) {
         // Print the message from the server
         printf("%s\n", inBuffer);
 
-        // Gracefully exit if the server tells us to quit
+        // Gracefully exit if the server or client wants to quit
         if(strstr(inBuffer, "./quit") || strstr(outmsg, "./quit")) {
             printf("Quit command received from server - terminating the client.");
             break;

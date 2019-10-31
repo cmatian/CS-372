@@ -1,8 +1,13 @@
-CC=GCC
-CFLAGS=-std=gnu11
+CC = gcc
+CFLAGS = -std=gnu11
+DEPS = connection.h validation.h
+OBJ = chatclient.o connection.o validation.o
 
-make: client.o connection.o validation.o
-	$(CC) -o client client.o connection.o validation.o $(CFLAGS)
+%.o: %.c $(DEPS)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+chatclient: $(OBJ)
+	gcc $(CFLAGS) -o $@ $^
 
 clean:
-	-rm -f *.o *.exe
+	-rm -f *.o *.exe *.out chatclient
