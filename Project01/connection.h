@@ -1,5 +1,10 @@
-// Connection Function Declarations
-// Christopher Matian 10/28/2019
+/**
+ * Programmer Name:         Christopher Matian
+ * Program Name:            TCP Simple chat client and server
+ * Program Description:     This is a simple chat program that allows messaging between a client and a server.
+ * Course Name:             CS-372 400 Fall Quarter
+ * Last Modified:           10/30/2019 - 9:10pm
+ */
 
 #include <stdio.h>
 #include <stdlib.h>

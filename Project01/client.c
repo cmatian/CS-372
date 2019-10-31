@@ -1,5 +1,10 @@
-// Project 1 TCP Client and Server
-// Christopher Matian 10/23/2019
+/**
+ * Programmer Name:         Christopher Matian
+ * Program Name:            TCP Simple chat client and server
+ * Program Description:     This is a simple chat program that allows messaging between a client and a server.
+ * Course Name:             CS-372 400 Fall Quarter
+ * Last Modified:           10/30/2019 - 9:10pm
+ */
 
 /* Source Citation:
  *  - Beej's TCP Client Src: https://beej.us/guide/bgnet/html/multi/clientserver.html#simpleclient
@@ -16,6 +21,18 @@
 #define SEND_BUFFER_SIZE 501
 #define RECV_BUFFER_SIZE 501
 
+/**
+ * Function:            main
+ *
+ * Description:         The main client function which executes the bulk of the function. It calls the corresponding
+ *                      functions to create the user handle, establish the connection with the server, and
+ *                      send/receive messages in a loop.
+ *
+ * Pre-condition:       No preconditions.
+ *
+ * Post-condition:      Returns 0 upon program completion and closes the socket (if it's open).
+ *
+ */
 int main(int argc, char * argv[]) {
 
     /* Validate Argument Count
@@ -27,7 +44,7 @@ int main(int argc, char * argv[]) {
         exit(1);
     }
 
-    // User Handle Buffer (No More than 16 characters
+    // User Handle Buffer
     char handleBuffer[HANDLE_BUFFER_SIZE];
     /* Capture User Input for user handle
      * Rules:
@@ -40,6 +57,7 @@ int main(int argc, char * argv[]) {
     do {
 
         printf(">>");
+        // We use a big buffer here and just validate the size inside of the isHandleValid function.
         fgets(handleBuffer, HANDLE_BUFFER_SIZE, stdin);
 
     } while(isHandleValid(handleBuffer) == 0);
