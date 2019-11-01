@@ -2,6 +2,8 @@ Christopher Matian - 10/31/2019
 
 ======= Instructions for running the chat client program ========
 
+0) Take the program files and extract them into a directory of your choice on flip.
+
 1) Make sure that you have two different flip clients running. E.g., flip1 on one terminal, and flip2 on a different terminal.
 
 2) On any one of the terminals, compile the chatclient code by calling "make" (without parens) in the terminal. Type ls and you
