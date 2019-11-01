@@ -29,6 +29,11 @@ typedef struct server {
 #ifndef connection_h
 #define connection_h
 
+#define SEND_BUFFER_SIZE 501
+#define RECV_BUFFER_SIZE 501
+
+int send_message(int *, int, char *);
+
 int tether(struct server *, int *);
 
 void set_addr_and_port(struct server *, char **);

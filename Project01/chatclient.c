@@ -21,8 +21,6 @@
 
 // MACRO Definitions
 #define HANDLE_BUFFER_SIZE 1024
-#define SEND_BUFFER_SIZE 501
-#define RECV_BUFFER_SIZE 501
 
 /**
  * Function:            main
@@ -94,52 +92,36 @@ int main(int argc, char * argv[]) {
         return connectionResult;
     };
 
-    // Create a function for messaging between servers in different header/source files
-    // do-while loop?
+    // While loop for sending and receiving messages between client and server
     while(1) {
-        char newmsg[SEND_BUFFER_SIZE] = "";
-        char outmsg[SEND_BUFFER_SIZE + MAX_HANDLE_SIZE];
-        char * outHandlePtr = handleName;
-        char * newmsgPtr = newmsg;
-        char * outBufferPtr = outmsg;
         char inBuffer[RECV_BUFFER_SIZE] = "";
-
-        printf("%s >> ", handleName);
-        fgets(newmsg, SEND_BUFFER_SIZE, stdin);
-
-        // Generate outmessage combining handle with newmsg
-        // This code will basically concatenate: handle name + >> + newmsg
-        outBufferPtr = stpcpy(outBufferPtr, outHandlePtr);
-        outBufferPtr = stpcpy(outBufferPtr, " >> ");
-        outBufferPtr = stpcpy(outBufferPtr, newmsgPtr);
-
-        // Send message to the server
-        send(socket, outmsg, strlen(outmsg), 0);
+        // Send message to the server and store returned int value
+        int sendMsg = send_message(&socket, MAX_HANDLE_SIZE, handleName);
 
         // Read from Server
-        // This should usually wait for a response from the server (socket will block here until it gets a response)
+        // This will wait for a response from the server (socket will block here until it gets a response)
+        int recvMsg = read(socket, inBuffer, sizeof(inBuffer));
 
-        int result = read(socket, inBuffer, sizeof(inBuffer));
         /* This indicates that there was an error.
          * The logic here is that the server is always sending back at least ~12 bytes of data (blank
          * input still has the name preprended to it). When the server terminates via CTRL+C, we can catch it
          * because the result will have a value of 0. We can exit gracefully from here.
          */
-        if(result == 0) {
+        if(recvMsg == 0) {
             printf("The server seems to have been terminated (^C) - gracefully closing the client.");
             break;
         }
 
-        if (result < 0) {
+        if (recvMsg < 0) {
             printf("There was an issue with the server - gracefully exiting the client.");
             break;
         }
 
-        // Print the message from the server
+        // Print the message from the server assuming no errors
         printf("%s\n", inBuffer);
 
         // Gracefully exit if the server or client wants to quit
-        if(strstr(inBuffer, "./quit") || strstr(outmsg, "./quit")) {
+        if(strstr(inBuffer, "./quit") || sendMsg == 1) {
             printf("Quit command received from server - terminating the client.");
             break;
         }

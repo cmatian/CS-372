@@ -10,6 +10,44 @@
 #include "connection.h"
 
 /**
+ * Function:            send_message
+ *
+ * Description:         This function was brought in from the chatclient main fn for cluttering. This will
+ *                      query the user for an input and send a message along to the server.
+ *
+ * Pre-condition:       Assumes that a socket variable has been created, that the handle size is initialized,
+ *                      and that the username was created.
+ *
+ * Post-condition:      Sends a message to the server and returns either 0 or 1. The value is used
+ *                      to validate whether a ./quit command was sent to the server.
+ *
+ */
+int send_message(int * socket, int maxHandleSize, char * handleName) {
+    char newmsg[SEND_BUFFER_SIZE] = "";
+    char outmsg[SEND_BUFFER_SIZE + maxHandleSize];
+    char * outHandlePtr = handleName;
+    char * newmsgPtr = newmsg;
+    char * outBufferPtr = outmsg;
+
+    // Query the user for the message they want to send
+    printf("%s >> ", handleName);
+    fgets(newmsg, SEND_BUFFER_SIZE, stdin);
+
+    // Generate outmessage combining handle with newmsg
+    // This code will basically concatenate: handle name + >> + newmsg
+    outBufferPtr = stpcpy(outBufferPtr, outHandlePtr);
+    outBufferPtr = stpcpy(outBufferPtr, " >> ");
+    outBufferPtr = stpcpy(outBufferPtr, newmsgPtr);
+
+    send(*socket, outmsg, strlen(outmsg), 0);
+
+    if(strstr(outmsg, "./quit")) {
+        return 1;
+    }
+    return 0;
+};
+
+/**
  * Function:            tether
  *
  * Description:         The function will handle the heavy-duty lifting and establish the connection between
