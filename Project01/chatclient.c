@@ -41,7 +41,7 @@ int main(int argc, char * argv[]) {
      */
     int argumentValidation = isArgValid(argc);
     if(argumentValidation == 0) {
-        fprintf(stderr, "Incorrect number of arguments");
+        fprintf(stderr, "Incorrect number of arguments\n");
         exit(1);
     }
 
@@ -108,12 +108,12 @@ int main(int argc, char * argv[]) {
          * because the result will have a value of 0. We can exit gracefully from here.
          */
         if(recvMsg == 0) {
-            printf("The server seems to have been terminated (^C) - gracefully closing the client.");
+            printf("The server seems to have been terminated (^C) - gracefully closing the client.\n");
             break;
         }
 
         if (recvMsg < 0) {
-            printf("There was an issue with the server - gracefully exiting the client.");
+            printf("There was an issue with the server - gracefully exiting the client.\n");
             break;
         }
 
@@ -122,7 +122,7 @@ int main(int argc, char * argv[]) {
 
         // Gracefully exit if the server or client wants to quit
         if(strstr(inBuffer, "./quit") || sendMsg == 1) {
-            printf("Quit command received from server - terminating the client.");
+            printf("Quit command received from server - terminating the client.\n");
             break;
         }
     }
