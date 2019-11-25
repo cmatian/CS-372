@@ -12,7 +12,7 @@
 /* Source Citation:
  *  - Beej's TCP Client and Server Src: https://beej.us/guide/bgnet/html/multi/clientserver.html#simpleclient
  *      - I used a large portion of his starter code and modified it for my program.
- *      - I mostly used the server portion of his code for the ftserver
+ *      - I used portions of his server.c code and abstracted parts of his listen, accept, bind, etc sample functions.
  *
  *  - Christopher Matian's Assignment 1:
  *      - I some code from my assignment one project. Most of it is the already modular functions used in the
@@ -22,11 +22,14 @@
  *      - Modified his example for my makefile.
  */
 
-// File Dependencies
-#include <stdio.h>
+// Header File(s)
+#include "validation.h"
+#include "connection.h"
 
-//
-int main() {
-    printf("Hello, World!\n");
+
+int main(int argc, char * argv[]) {
+    // Validate argument count
+    validate_arguments(argc);
+
     return 0;
 }

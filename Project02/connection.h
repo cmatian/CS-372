@@ -9,6 +9,8 @@
  * Last Modified:
  */
 
+#define BACKLOG 2
+
 // Library Dependencies
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,5 +38,10 @@ typedef struct server {
 
 #ifndef CONNECTION_H
 #define CONNECTION_H
+
+struct addrinfo get_address_info(char *, char *);
+int create_socket(struct addrinfo *);
+void bind_socket(int, struct addrinfo *);
+void listen_socket(int);
 
 #endif // CONNECTION_H
