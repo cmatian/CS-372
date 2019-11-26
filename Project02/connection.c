@@ -12,7 +12,25 @@
 // Header File(s)
 #include "connection.h"
 
-struct addrinfo get_address_info(char * address, char * port) {
+/**
+ * Function:            get_in_addr
+ *
+ * Description:         The function will evaluate which IP version to use for the IP address
+ *
+ * Pre-condition:       Assumes that the socket has been created and a link from the list
+ *                      has been passed in for evaluation.
+ *
+ * Post-condition:      Returns a reference of an IPv4 or IPv6 address depending on the family type
+ *
+ */
+void * get_in_addr(struct sockaddr * sa) {
+    if(sa->sa_family == AF_INET) {
+        return &((struct sockaddr_in *)sa)->sin_addr;
+    }
+    return &(((struct sockaddr_in6 *)sa)->sin6_addr);
+}
+
+struct addrinfo * get_address_info(struct sock_info * sock_arg) {
     struct addrinfo hints;
     struct addrinfo * res;
     int status;
@@ -22,37 +40,52 @@ struct addrinfo get_address_info(char * address, char * port) {
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC; // Allow IPv4 or IPv6
     hints.ai_socktype = SOCK_STREAM; // TCP
+    hints.ai_protocol = 0;
     // Evaluate whether our address is set or not
-    if(strcmp(address, "NULL") == 0) {
-        hints.ai_flags = AI_PASSIVE;
+    if(strcmp(sock_arg->name, "NULL") == 0) {
         arg = NULL;
     } else {
-        arg = address;
+        arg = sock_arg->name;
     }
     // Set up addr struct for later - we really only need to pass in the port. We'll use the server's native IP.
-    if ((status = getaddrinfo(arg, port, &hints, &res)) != 0) {
+    if ((status = getaddrinfo(arg, sock_arg->port, &hints, &res)) != 0) {
         fprintf(stderr, "Exception - get_address_info error: %s\n", gai_strerror(status));
         exit(1);
     }
-    return * res;
+    return res;
 }
 
-int create_socket(struct addrinfo * p) {
-    int sockfd;
-    if((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol) == -1)) {
-        fprintf(stderr, "Exception - create_socket error");
-        exit(1);
+int socket_setup(struct addrinfo * p, int type) {
+    int sockfd = 0;
+    for(; p != NULL; p = p->ai_next) {
+        if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol) == -1)) {
+            close(sockfd);
+            fprintf(stderr, "Exception - create_socket error\n");
+            continue;
+        }
+
+        /**
+         * This conditional acts like a router to determine what we're doing with socket_setup.
+         * The server only needs to perform binding on initialization. When we need the server to
+         * actually connect to the server, we route it using type == 1 and try to test for a connection.
+         */
+        if (type == 0) {
+            if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+                close(sockfd);
+                fprintf(stderr, "Exception - socket_create connection error...trying a different address.\n");
+                continue;
+            }
+        } else {
+            if(connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+                close(sockfd);
+                fprintf(stderr, "Exception - socket_create connection error...trying a different address.\n");
+                continue;
+            }
+        }
     }
+
     return sockfd;
 }
-
-void bind_socket(int sockfd, struct addrinfo * p) {
-    if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-        close(sockfd);
-        fprintf(stderr, "Exception - bind_socket error.");
-        exit(1);
-    }
-};
 
 void listen_socket(int sockfd) {
     // Listen for connections - throw error's if any arise
@@ -60,14 +93,53 @@ void listen_socket(int sockfd) {
         fprintf(stderr, "Exception - listen_socket error.");
         exit(1);
     }
-};
+}
 
-void tether(int sockfd, struct addrinfo * p) {
+void tether(int sockfd, struct addrinfo * p, struct sock_info * sock_arg) {
+    char s[INET6_ADDRSTRLEN];
     int result;
     if((result = connect(sockfd, p->ai_addr, p->ai_addrlen)) == -1) {
-        fprintf(stderr, "Exception - tether error.");
+        fprintf(stderr, "Exception - tether (connection) error.");
         exit(1);
     }
+    // Converts the address into a legible string
+    inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
+
+    // Store the address into our server struct (usually socket_2)
+    sock_arg->name = s;
+}
+
+/**
+ * Function:            set_addr_and_port
+ *
+ * Description:         The function will assign the sock_info structure's name and port
+ *
+ * Pre-condition:       Assumes that the port was set on the command line argument, and that the
+ *                      server structure was initialized at run time. The sock_info address will be
+ *                      set when the connection is made between client and sre
+ *
+ * Post-condition:      The sock_info name and sock_info port will be set by the function for use throughout the program.
+ *
+ */
+void set_addr_and_port(struct sock_info * sock_arg, char * addr, char * port) {
+    sock_arg->name = addr; // Set Address
+    sock_arg->port = port; // Set Port
+}
+
+/**
+ * Function:            set_port
+ *
+ * Description:         The function will assign the sock_info structure's name as NULL and port from the argv[]
+ *
+ * Pre-condition:       Assumes that the port was set on the command line argument, and that the
+ *                      sock_info structure was initialized at run time.
+ *
+ * Post-condition:      The sock_info name will be NULL  and sock_info port will be set by the function for use throughout the program.
+ *
+ */
+void set_port(struct sock_info * sock_arg, char ** argv) {
+    sock_arg->name = "NULL";
+    sock_arg->port = argv[1];
 }
 
 

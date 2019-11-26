@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -std=gnu11
 DEPS = connection.h validation.h
-OBJ = ftserver.o
+OBJ = ftserver.o connection.o validation.o
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -10,7 +10,7 @@ ftserver: $(OBJ)
 	gcc $(CFLAGS) -o $@ $^
 
 test: ftserver
-	./ftserver localhost 12000 -l 12001
+	./ftserver 12021
 
 clean:
 	-rm -f *.o *.exe *.out ftserver

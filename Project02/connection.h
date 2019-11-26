@@ -25,23 +25,26 @@
 
 
 /**
- * Server Struct
+ * Socket Information Struct
  * We will likely be creating 2 structs (one to hold the FTP control connection and the other to
  * hold the FTP data connection.
  */
 #ifndef server // Define Once
-typedef struct server {
+typedef struct sock_info {
     char * name; // Address Name
     char * port; // Address Port
-} server;
-#endif // server
+} sock_info;
+#endif // sock_info
 
 #ifndef CONNECTION_H
 #define CONNECTION_H
 
-struct addrinfo get_address_info(char *, char *);
-int create_socket(struct addrinfo *);
-void bind_socket(int, struct addrinfo *);
+void * get_in_addr(struct sockaddr *);
+void set_addr_and_port(struct sock_info *, char *, char *);
+void set_port(struct sock_info *, char **);
+struct addrinfo * get_address_info(struct sock_info *);
+int socket_setup(struct addrinfo *, int);
 void listen_socket(int);
+void tether(int, struct addrinfo *, struct sock_info *);
 
 #endif // CONNECTION_H

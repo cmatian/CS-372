@@ -5,7 +5,7 @@
  *                          to the server and request either a list of the server's current directory, or download a
  *                          file from that directory.
  * Course Name:             CS-372 400 Fall Quarter
- * Created On:              11/21/2019 - 5:53pm
+ * Created On:              11/24/2019 - 9:53pm
  * Last Modified:
  */
 
@@ -16,6 +16,5 @@
 #define VALIDATION_H
 
 void validate_arguments(int argc);
-
 
 #endif //VALIDATION_H
