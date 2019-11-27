@@ -55,26 +55,22 @@ connect_to_server(clientSocket)
 
 # Bottom line - our server and client need to talk back to each other for each message we want to send.
 # The design:
-# CLIENT sends an "initialize" message to server. Server responds"next".
 # CLIENT sends the payload size. Server responds with "next".
 # CLIENT sends the first piece of the payload. Server responds with "next".
 # CLIENT sends the next piece of the payload (and so on). Server responds with "next".
 # When we're done sending the payload we send another message to the server indicating that we are done.
 
 # Send our initial details
-clientSocket.send("initialize".encode())
-inMessage = clientSocket.recv(2048).decode()
-print(f'{inMessage}')
-
 clientSocket.send(str(len(payload)).encode()) # Send the size of the payload.
-inMessage1 = clientSocket.recv(2048).decode()
-print(f'{inMessage1}')
+response = clientSocket.recv(2048).decode()
+print(response)
 
-for i in range(len(payload)):
-    clientSocket.send((payload[i] + '\0').encode())
-    response = clientSocket.recv(2048).decode() # Wait for a server response before continuing the loop
-    print(f'{response}')
-clientSocket.send("complete".encode())
+# for i in range(len(payload)):
+#     clientSocket.send((payload[i] + '\0').encode())
+#     response = clientSocket.recv(2048).decode() # Wait for a server response before continuing the loop
+#     print(response)
+#
+# clientSocket.send("complete".encode())
 
 #clientSocket.send("Hello".encode())
 

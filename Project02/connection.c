@@ -108,12 +108,20 @@ void listen_socket(int sockfd) {
     }
 }
 
-void socket_address_flip(struct sock_info * sock_arg, char * s) {
-    if(strcmp(sock_arg->name, "NULL") == 0) {
-        sock_arg->name = s;
-        return;
-    }
-    sock_arg->name = "NULL";
+void accept_connection(struct sock_info * sock_arg, int * sock_fd, int * new_fd) {
+    char s[INET6_ADDRSTRLEN];
+    struct sockaddr_storage their_addr;
+    socklen_t sin_size = sizeof their_addr;
+
+    // Accept incoming connection
+    *new_fd = accept(*sock_fd, (struct sockaddr *)&their_addr, &sin_size);
+
+    // Convert the incoming address into a string for later.
+    inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
+    printf("Received a connection from address %s.\n", s);
+
+    // Store the address into the sock_info structure.
+    sock_arg->name = s;
 }
 
 // Might not actually need this...

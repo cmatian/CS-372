@@ -26,6 +26,7 @@
 // Header File(s)
 #include "validation.h"
 #include "connection.h"
+#include "data.h"
 
 
 int main(int argc, char * argv[]) {
@@ -59,53 +60,52 @@ int main(int argc, char * argv[]) {
 
     printf("Server was successfully initialized on port %s - listening for a new connection.\n", socket_1.port);
     while(ctr > 0) {
-        char in_buffer[500] = "";
-        memset(in_buffer, 0, sizeof(in_buffer));
-        char s[INET6_ADDRSTRLEN];
-        struct sockaddr_storage their_addr;
-        socklen_t sin_size = sizeof their_addr;
-        int new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
+        // 1. Run the server and wait for new connections.
+        int new_fd;
+        accept_connection(&socket_2, &sockfd, &new_fd);
+        // Validate the connection
         if (new_fd == -1) {
-            perror("accept");
+            fprintf(stderr, "Exception - there was an issue with the connection.");
             continue;
         }
 
-        inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
-        printf("Received a connection from address %s\n", s);
+        // 2. Connection was found - get the payload length first
+        int payload_length = get_payload_length(&new_fd);
 
-        // 2d array to hold our string of commands. The initial payload from the client connection will
-        // consist of important details needed to set up the data connection as well as the command.
-        int init_len;
-        // Refresh in_buffer every time we read on it
-        memset(in_buffer, '\0', sizeof(in_buffer));
-        read(new_fd, in_buffer, sizeof(in_buffer));
-        printf("%s\n", in_buffer);
-        if(strstr(in_buffer, "initialize")) {
-            printf("Hello\n");
-            write(new_fd, "ready", strlen("ready"));
+        // 3. Initialize a 2d array structure and grab the actual payload data.
+        char data_info[payload_length][100];
 
-            memset(in_buffer, '\0', sizeof(in_buffer));
-            read(new_fd, in_buffer, sizeof(in_buffer)); // Read in the length of the payload data
 
-            init_len = atoi(in_buffer); // Set the length
-            char init[init_len][100]; // initialize the 2d array to the init_len
-
-            for(int i = 0; i < init_len; i++) {
-                write(new_fd, "ready", strlen("ready")); // Tell the client we are ready.
-                read(new_fd, init[i], sizeof(init[i])); // Read the first item in.
-                printf("init %d: %s\n", i, init[i]);
-            }
-
-            write(new_fd, "ready", strlen("ready"));
-
-            memset(in_buffer, '\0', sizeof(in_buffer));
-            read(new_fd, in_buffer, sizeof(in_buffer));
-
-            if(strstr(in_buffer, "complete") == 0) {
-                close(new_fd); // Close socket for new one.
-                continue;
-            }
-        }
+//        // Refresh in_buffer every time we read on it
+//        memset(in_buffer, '\0', sizeof(in_buffer));
+//        read(new_fd, in_buffer, sizeof(in_buffer));
+//        printf("%s\n", in_buffer);
+//        if(strstr(in_buffer, "initialize")) {
+//            printf("Hello\n");
+//            write(new_fd, "ready", strlen("ready"));
+//
+//            memset(in_buffer, '\0', sizeof(in_buffer));
+//            read(new_fd, in_buffer, sizeof(in_buffer)); // Read in the length of the payload data
+//
+//            init_len = atoi(in_buffer); // Set the length
+//            char init[init_len][100]; // initialize the 2d array to the init_len
+//
+//            for(int i = 0; i < init_len; i++) {
+//                write(new_fd, "ready", strlen("ready")); // Tell the client we are ready.
+//                read(new_fd, init[i], sizeof(init[i])); // Read the first item in.
+//                printf("init %d: %s\n", i, init[i]);
+//            }
+//
+//            write(new_fd, "ready", strlen("ready"));
+//
+//            memset(in_buffer, '\0', sizeof(in_buffer));
+//            read(new_fd, in_buffer, sizeof(in_buffer));
+//
+//            if(strstr(in_buffer, "complete") == 0) {
+//                close(new_fd); // Close socket for new one.
+//                continue;
+//            }
+//        }
 
         close(new_fd); // Close socket for new one.
         ctr--; // Delete later - just getting rid of annoying endless loop inspection errors
