@@ -9,7 +9,7 @@
  * Last Modified:
  */
 
-#define BACKLOG 2
+#define BACKLOG 5
 
 // Library Dependencies
 #include <stdio.h>
@@ -45,6 +45,7 @@ void set_port(struct sock_info *, char **);
 struct addrinfo * get_address_info(struct sock_info *);
 int socket_setup(struct addrinfo *, int);
 void listen_socket(int);
+void socket_address_flip(struct sock_info *, char *);
 void tether(int, struct addrinfo *, struct sock_info *);
 
 #endif // CONNECTION_H

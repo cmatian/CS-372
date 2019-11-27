@@ -38,7 +38,7 @@ struct addrinfo * get_address_info(struct sock_info * sock_arg) {
 
     // Set up Hints
     memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC; // Allow IPv4 or IPv6
+    hints.ai_family = AF_UNSPEC; // Use IPv4 or IPv6
     hints.ai_socktype = SOCK_STREAM; // TCP
     hints.ai_protocol = 0;
     // Evaluate whether our address is set or not
@@ -47,6 +47,7 @@ struct addrinfo * get_address_info(struct sock_info * sock_arg) {
     } else {
         arg = sock_arg->name;
     }
+
     // Set up addr struct for later - we really only need to pass in the port. We'll use the server's native IP.
     if ((status = getaddrinfo(arg, sock_arg->port, &hints, &res)) != 0) {
         fprintf(stderr, "Exception - get_address_info error: %s\n", gai_strerror(status));
@@ -56,50 +57,71 @@ struct addrinfo * get_address_info(struct sock_info * sock_arg) {
 }
 
 int socket_setup(struct addrinfo * p, int type) {
+    char s[INET6_ADDRSTRLEN];
+    int status;
     int sockfd = 0;
+    int yes = 1;
+
+    // Loop through the address structures in p until we find a usable address.
     for(; p != NULL; p = p->ai_next) {
         if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol) == -1)) {
             close(sockfd);
-            fprintf(stderr, "Exception - create_socket error\n");
+            fprintf(stderr, "Exception - Socket creation error... trying a different address.\n");
+            continue;
+        }
+
+        if ((status = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)) {
+            close(sockfd);
+            fprintf(stderr, "Exception - %s... trying a different address.\n", gai_strerror(status));
             continue;
         }
 
         /**
          * This conditional acts like a router to determine what we're doing with socket_setup.
          * The server only needs to perform binding on initialization. When we need the server to
-         * actually connect to the server, we route it using type == 1 and try to test for a connection.
+         * actually connect to the client (for data transfer), we route it using type == 1 and try to test for a connection.
          */
         if (type == 0) {
             if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
                 close(sockfd);
-                fprintf(stderr, "Exception - socket_create connection error...trying a different address.\n");
+                fprintf(stderr, "Exception - Socket binding error... trying a different address.\n");
                 continue;
             }
         } else {
             if(connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
                 close(sockfd);
-                fprintf(stderr, "Exception - socket_create connection error...trying a different address.\n");
+                fprintf(stderr, "Exception - Socket connection error... trying a different address.\n");
                 continue;
             }
         }
+        break;
     }
-
     return sockfd;
 }
 
 void listen_socket(int sockfd) {
-    // Listen for connections - throw error's if any arise
+    // Listen for connections - throw errors if any arise.
     if(listen(sockfd, BACKLOG) == -1) {
-        fprintf(stderr, "Exception - listen_socket error.");
+        close(sockfd);
+        fprintf(stderr, "Exception - listen_socket error.\n");
         exit(1);
     }
 }
 
+void socket_address_flip(struct sock_info * sock_arg, char * s) {
+    if(strcmp(sock_arg->name, "NULL") == 0) {
+        sock_arg->name = s;
+        return;
+    }
+    sock_arg->name = "NULL";
+}
+
+// Might not actually need this...
 void tether(int sockfd, struct addrinfo * p, struct sock_info * sock_arg) {
     char s[INET6_ADDRSTRLEN];
     int result;
     if((result = connect(sockfd, p->ai_addr, p->ai_addrlen)) == -1) {
-        fprintf(stderr, "Exception - tether (connection) error.");
+        fprintf(stderr, "Exception - tether (connection) error.\n");
         exit(1);
     }
     // Converts the address into a legible string

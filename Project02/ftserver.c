@@ -30,7 +30,7 @@
 
 int main(int argc, char * argv[]) {
     // Validate argument count
-    validate_arguments(argc); // Expected 2 args in form ./ftserver <control_port_number>
+    validate_arguments(argc); // Expected 2 args in the form ./ftserver <control_port_number>
 
     /**
      * socket_1: Holds the address and port information of the server. The address is going to be NULL, while the port will be
@@ -73,10 +73,41 @@ int main(int argc, char * argv[]) {
         inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
         printf("Received a connection from address %s\n", s);
 
+        // 2d array to hold our string of commands. The initial payload from the client connection will
+        // consist of important details needed to set up the data connection as well as the command.
+        int init_len;
+        // Refresh in_buffer every time we read on it
+        memset(in_buffer, '\0', sizeof(in_buffer));
         read(new_fd, in_buffer, sizeof(in_buffer));
         printf("%s\n", in_buffer);
-        close(new_fd); // Close socket for new one.
+        if(strstr(in_buffer, "initialize")) {
+            printf("Hello\n");
+            write(new_fd, "ready", strlen("ready"));
 
+            memset(in_buffer, '\0', sizeof(in_buffer));
+            read(new_fd, in_buffer, sizeof(in_buffer)); // Read in the length of the payload data
+
+            init_len = atoi(in_buffer); // Set the length
+            char init[init_len][100]; // initialize the 2d array to the init_len
+
+            for(int i = 0; i < init_len; i++) {
+                write(new_fd, "ready", strlen("ready")); // Tell the client we are ready.
+                read(new_fd, init[i], sizeof(init[i])); // Read the first item in.
+                printf("init %d: %s\n", i, init[i]);
+            }
+
+            write(new_fd, "ready", strlen("ready"));
+
+            memset(in_buffer, '\0', sizeof(in_buffer));
+            read(new_fd, in_buffer, sizeof(in_buffer));
+
+            if(strstr(in_buffer, "complete") == 0) {
+                close(new_fd); // Close socket for new one.
+                continue;
+            }
+        }
+
+        close(new_fd); // Close socket for new one.
         ctr--; // Delete later - just getting rid of annoying endless loop inspection errors
     }
 
