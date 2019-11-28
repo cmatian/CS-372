@@ -32,6 +32,12 @@
  *      - Abstracted the code in order to produce a char array that can hold strings. This was used to
  *        hold data which was looped over and sent through the data socket.
  *
+ *  - Check if a file exists: https://stackoverflow.com/a/230068
+ *      - Modified the code to simply check for both existence of the file and that it is readable.
+ *
+ *  - Send a file in chunks: https://stackoverflow.com/a/2014066
+ *      - Portable solution to sending a chunk of the file over the data connection.
+ *
  */
 
 // Header File(s)

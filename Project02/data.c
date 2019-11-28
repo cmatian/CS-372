@@ -109,7 +109,27 @@ void get_directory(int *main_fd, struct sock_info *sock_arg, struct data_info *d
     free_2d_array(storage, length);
 }
 
-void send_directory(int *main_fd, struct sock_info *sock_arg, struct data_info *data_arg, char **storage, int length) {
+int file_exists(struct data_info * data_arg) {
+    if(access(data_arg->file_name, F_OK | R_OK) != -1) {
+        printf("Server: File { %s } exists and is readable.\n", data_arg->file_name);
+        return 1;
+    }
+    printf("Server: File { %s } does not exists or cannot be read.\n", data_arg->file_name);
+    return 0;
+}
+
+void get_file(int *main_fd, struct sock_info * sock_arg, struct data_info * data_arg) {
+    int exists = file_exists(data_arg);
+    if(exists < 1) {
+        return;
+    }
+}
+
+void send_file(int * main_fd, struct sock_info * sock_arg, struct data_info * data_arg, char ** storage, int length) {
+
+}
+
+void send_directory(int * main_fd, struct sock_info * sock_arg, struct data_info * data_arg, char ** storage, int length) {
     printf("Server: Preparing to send directory to the client...\n");
     /**
      * Sleep for one second. During this pause client will send a "ready" message over the main_fd arg
@@ -117,6 +137,7 @@ void send_directory(int *main_fd, struct sock_info *sock_arg, struct data_info *
      */
     sleep(1);
     char in_buffer[100] = "";
+    memset(in_buffer, '\0', sizeof(in_buffer));
     /**
      * Generate the connection. The client has to be LISTENING first before we can proceed. Otherwise
      * the connection will not be established properly. Read from the main connection port.
@@ -128,8 +149,6 @@ void send_directory(int *main_fd, struct sock_info *sock_arg, struct data_info *
             break;
         }
     }
-
-    memset(in_buffer, '\0', sizeof(in_buffer));
 
     /**
      * Connect to the client using a similar process to when the main_fd socket was produced.
@@ -172,7 +191,8 @@ void data_command_router(int *main_fd, struct sock_info *sock_arg, struct data_i
         get_directory(main_fd, sock_arg, data_arg);
     } else if(strncmp(data_arg->command, "-g", strlen("-g")) == 0) {
         // Command is "-g" (Get File)
-        printf("Server: Client requested a file: { %s }.", data_arg->file_name);
+        printf("Server: Client requested a file: { %s }.\n", data_arg->file_name);
+        get_file(main_fd, sock_arg, data_arg);
     } else {
         printf("Server: Client command %s not recognized.\n", data_arg->command);
         return;

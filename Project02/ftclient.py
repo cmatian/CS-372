@@ -80,31 +80,37 @@ def send_initial_payload(payload, client_socket):
 
 def get_directory(data_socket):
     print("\n=== Directory Contents ===\n")
-    dir_payload = data_socket.recv(200).decode()
+    dir_payload = data_socket.recv(400).decode()
     while "__complete__" not in dir_payload:
         print(f'\t- {dir_payload}')
-        dir_payload = data_socket.recv(200).decode()
-    data_socket.recv(200).decode()
+        dir_payload = data_socket.recv(400).decode()
+    data_socket.recv(400).decode()
     print("\nGet Directory Complete.\n")
 
 
 def main():
-    client_socket = create_socket()  # Initial client socket
-    payload = create_initial_payload()  # Initial payload
-    connect_to_server(client_socket)  # Connect to the server
-    send_initial_payload(payload, client_socket)  # Send the initial payload data to the server
+    # Initial client socket
+    client_socket = create_socket()
+    # Initial payload
+    payload = create_initial_payload()
+
+    # Connect to the server
+    connect_to_server(client_socket)
+    # Send the initial payload data to the server
+    send_initial_payload(payload, client_socket)
+
 
     # Prep a socket for connection.
-    server_socket = create_server_socket()
-    data_socket = accept_from_server(server_socket, client_socket)
+    # server_socket = create_server_socket()
+    # data_socket = accept_from_server(server_socket, client_socket)
 
     # Get the directory
-    get_directory(data_socket)
+    # get_directory(data_socket)
 
     # Get a file - client should do some client side checking to ensure they're ok with overwriting if it exists.
 
     # Purge all open sockets
-    data_socket.close()
+    # data_socket.close()
     client_socket.close()
 
 main()
