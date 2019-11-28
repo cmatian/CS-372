@@ -84,14 +84,20 @@ def main():
 
     print("Directory Contents")
     dir_payload = dataSocket.recv(200).decode()
-    while dir_payload != "complete":
+    i = 0
+    while "__complete__" not in dir_payload:
         print(f'{dir_payload}')
         dir_payload = dataSocket.recv(200).decode()
+        i += 1
+        if(i == 25): # hard exit, stop endless loops for debug
+            break
+    print("Out of the loop...sending message to server")
+    dataSocket.send("h\0".encode())
     print("Waiting for server confirmation...", end="")
-    dataSocket.recv(150).decode()
+    dataSocket.recv(200).decode()
     print("Get Directory Complete...")
     dataSocket.close()
     clientSocket.close()
-
+    return
 main()
 

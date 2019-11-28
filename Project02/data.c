@@ -60,7 +60,7 @@ void setup_data_info(int *sock_fd, int payload_length, struct data_info *data_ar
     }
 }
 
-char **create_2d_array(int length) {
+char ** create_2d_array(int length) {
     char **array = malloc(length * sizeof(char *)); // Array of variable items
     for (int i = 0; i < length; i++) {
         array[i] = malloc(100 * sizeof(char)); // Set a char array inside of size 100
@@ -126,6 +126,8 @@ void send_directory(int *main_fd, struct sock_info *sock_arg, struct data_info *
         }
     }
 
+    memset(in_buffer, '\0', sizeof(in_buffer));
+
     struct addrinfo *p = get_address_info(sock_arg);
     int sockfd = socket_setup(p, 1); // Second param = try to connect to client on data port (don't bind).
 
@@ -141,12 +143,14 @@ void send_directory(int *main_fd, struct sock_info *sock_arg, struct data_info *
      * Perform the file transfer and send the directory files over
      */
     for (int i = 0; i < length; i++) {
-        usleep(50000); // artificially slow down the transfer rate (0.05s)
+        usleep(150000); // artificially slow down the transfer rate (150ms) - this will stop data from flooding the client buffer
         int size = strlen(storage[i]);
         write(sockfd, storage[i], size); // write
     }
     // Send a complete message
-    write(sockfd, "complete", strlen("complete"));
+    write(sockfd, "__complete__", strlen("__complete__"));
+    read(sockfd, in_buffer, 100); // Wait for a confirmation from the client.
+    printf("Message from client: %s", in_buffer);
     printf("Directory transfer complete.\n");
 
     close(sockfd); // Close out the data socket
@@ -162,8 +166,8 @@ void data_command_router(int *main_fd, struct sock_info *sock_arg, struct data_i
 }
 
 void prepare_data_socket(struct sock_info *sock_arg, struct data_info *data_arg) {
-    strcpy(sock_arg->address, data_arg->address);
-    strcpy(sock_arg->port, data_arg->port);
+    sock_arg->address = data_arg->address;
+    sock_arg->port = data_arg->port;
 }
 
 void free_data(struct data_info *data_arg) {

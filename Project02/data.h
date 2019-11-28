@@ -15,23 +15,14 @@
 #define DATA_H
 
 int get_payload_length(int *);
-
 void setup_data_info(int *, int, struct data_info *);
-
 void prepare_data_socket(struct sock_info *, struct data_info *);
-
 void data_command_router(int *, struct sock_info *, struct data_info *);
-
 char ** create_2d_array(int);
-
 void free_2d_array(char **, int);
-
 int read_directory(char **);
-
 void send_directory(int *, struct sock_info *, struct data_info *, char **, int);
-
 void get_directory(int *, struct sock_info *, struct data_info *);
-
 void free_data(struct data_info *);
 
 #endif // DATA_H

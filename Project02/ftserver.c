@@ -56,7 +56,6 @@ int main(int argc, char * argv[]) {
     listen_socket(sockfd);
 
     int ctr = 10; // delete later
-
     printf("Server was successfully initialized on port %s - listening for a new connection.\n", control_socket.port);
     while(ctr > 0) {
         struct data_info payload;
