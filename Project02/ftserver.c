@@ -55,7 +55,7 @@ int main(int argc, char * argv[]) {
     // Set up the listener on the server.
     listen_socket(sockfd);
 
-    int ctr = 500; // delete later
+    int ctr = 10; // delete later
 
     printf("Server was successfully initialized on port %s - listening for a new connection.\n", control_socket.port);
     while(ctr > 0) {
@@ -65,7 +65,9 @@ int main(int argc, char * argv[]) {
         accept_connection(&payload, &sockfd, &newfd);
         // Validate the connection
         if (newfd == -1) {
-            fprintf(stderr, "Exception - there was an issue with the connection.");
+            close(newfd);
+            fprintf(stderr, "Exception - there was an issue with the connection.\n");
+            ctr--;
             continue;
         }
 
@@ -76,24 +78,16 @@ int main(int argc, char * argv[]) {
         //    - The payload data here consists of the command, possibly the filename, and lastly the data port number.
         setup_data_info(&newfd, payload_length, &payload);
 
-        // 4. Initialize socket_2 to just hold the data from our payload struct
+        // 4. Initialize data_socket to hold the data from our payload struct - this is used later for a data connection
+        //    - The payload here is to just reinforce what command came through and grab the filename.
         prepare_data_socket(&data_socket, &payload);
 
-        printf("Inside payload:\n");
-        printf("Address: %s\n", payload.address);
-        printf("Port: %s\n", payload.port);
-        printf("File: %s\n", payload.file_name);
-        printf("Command: %s\n", payload.command);
+        // 5. Pass our data socket and payload structure to a function to route based on commands. Also pass the original
+        // socket through for communication to set up the connection inside.
+        data_command_router(&newfd, &data_socket, &payload);
 
-        printf("\nInside data socket:\n");
-        printf("Address: %s\n", data_socket.address);
-        printf("Port: %s\n\n", data_socket.port);
-
-        // 5. Pass our data socket and payload structure to a function to route based on commands.
-        data_command_router(&data_socket, &payload);
-
-        free_data(&payload); // clean up
         close(newfd); // Close socket for new one.
+        free_data(&payload); // clean up
         ctr--; // Delete later - just getting rid of annoying endless loop inspection errors
     }
 

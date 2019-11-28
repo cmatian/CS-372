@@ -38,11 +38,11 @@ struct addrinfo * get_address_info(struct sock_info * sock_arg) {
 
     // Set up Hints
     memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC; // Use IPv4 or IPv6
+    hints.ai_family = AF_INET; // Use IPv4 or IPv6
     hints.ai_socktype = SOCK_STREAM; // TCP
-    hints.ai_protocol = 0;
     // Evaluate whether our address is set or not
     if(strcmp(sock_arg->address, "NULL") == 0) {
+        hints.ai_flags = AI_PASSIVE;
         arg = NULL;
     } else {
         arg = sock_arg->address;
@@ -57,21 +57,13 @@ struct addrinfo * get_address_info(struct sock_info * sock_arg) {
 }
 
 int socket_setup(struct addrinfo * p, int type) {
-    int status;
-    int sockfd = 0;
-    int yes = 1;
-
+    int sockfd = 0, sbind, sconn;
     // Loop through the address structures in p until we find a usable address.
     for(; p != NULL; p = p->ai_next) {
-        if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol) == -1)) {
+        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (sockfd == -1) {
             close(sockfd);
             fprintf(stderr, "Exception - Socket creation error... trying a different address.\n");
-            continue;
-        }
-
-        if ((status = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)) {
-            close(sockfd);
-            fprintf(stderr, "Exception - %s... trying a different address.\n", gai_strerror(status));
             continue;
         }
 
@@ -81,13 +73,15 @@ int socket_setup(struct addrinfo * p, int type) {
          * actually connect to the client (for data transfer), we route it using type == 1 and try to test for a connection.
          */
         if (type == 0) {
-            if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+            sbind = bind(sockfd, p->ai_addr, p->ai_addrlen);
+            if (sbind == -1) {
                 close(sockfd);
                 fprintf(stderr, "Exception - Socket binding error... trying a different address.\n");
                 continue;
             }
         } else {
-            if(connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+            sconn = connect(sockfd, p->ai_addr, p->ai_addrlen);
+            if(sconn == -1) {
                 close(sockfd);
                 fprintf(stderr, "Exception - Socket connection error... trying a different address.\n");
                 continue;

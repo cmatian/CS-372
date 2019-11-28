@@ -34,13 +34,26 @@ def create_socket():
     clientSocket = socket(AF_INET, SOCK_STREAM) # connect using TCP over IPv4
     return clientSocket
 
+def create_server_socket():
+    serverSocket = socket(AF_INET, SOCK_STREAM)
+    serverHost = gethostname()
+    serverPort = int(sys.argv[len(sys.argv) - 1]) # Data Port = last item in the argv array
+    serverSocket = socket(AF_INET, SOCK_STREAM)
+    serverSocket.bind(('', serverPort))
+    serverSocket.listen(1)
+    return serverSocket
+
+def accept_from_server(serverSocket, clientSocket):
+    clientSocket.send("ready".encode())
+    data_socket, address = serverSocket.accept()
+    return data_socket
+
 
 def connect_to_server(clientSocket):
     # Key: [2] = server name, [3] = server port
     serverName = sys.argv[1]
     serverPort = int(sys.argv[2])
     clientSocket.connect((serverName, serverPort))
-
 
 # Initial payload is the bits of data we want to send to the server.
 # We want the server to know the command, the file to look for (if the command is -g), and what the data port is.
@@ -52,34 +65,31 @@ def create_initial_payload():
         fn_payload.append(sys.argv[i])
     return fn_payload
 
-
 def send_initial_payload(payload, clientSocket):
     clientSocket.send(str(len(payload)).encode()) # Send the size of the payload.
-    response = clientSocket.recv(2048).decode()
-    print(response)
+    clientSocket.recv(2048).decode()
     for i in range(len(payload)):
         clientSocket.send((payload[i] + '\0').encode())
-        response = clientSocket.recv(2048).decode() # Wait for a server response before continuing the loop
-        print(response)
+        clientSocket.recv(2048).decode() # Wait for a server response before continuing the loop
 
+def main():
+    clientSocket = create_socket() # Initial client socket
+    payload = create_initial_payload() # Initial payload
+    connect_to_server(clientSocket) # Connect to the server
+    send_initial_payload(payload, clientSocket) # Send the initial payload data to the server (command, [filename], port).
 
-clientSocket = create_socket()
-payload = create_initial_payload()
+    # Prep a socket for connection.
+    serverSocket = create_server_socket()
+    dataSocket = accept_from_server(serverSocket, clientSocket)
 
-connect_to_server(clientSocket)
+    dir_payload = dataSocket.recv(2048).decode()
+    print("Directory Contents")
+    while dir_payload != "complete":
+        print(f'{dir_payload}')
+        dir_payload = dataSocket.recv(2048).decode()
 
-# Bottom line - our server and client need to talk back to each other for each message we want to send.
-# The design:
-# CLIENT sends the payload size. Server responds with "next".
-# CLIENT sends the first piece of the payload. Server responds with "next".
-# CLIENT sends the next piece of the payload (and so on). Server responds with "next".
-# When we're done sending the payload we send another message to the server indicating that we are done.
-send_initial_payload(payload, clientSocket)
+    dataSocket.close()
+    clientSocket.close()
 
-clientSocket.send("complete".encode())
+main()
 
-
-# modMessage = clientSocket.recv(2048)
-
-# print(f"From Server: {modMessage.decode()}")
-clientSocket.close()

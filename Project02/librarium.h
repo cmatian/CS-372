@@ -36,6 +36,7 @@ typedef struct sock_info {
     char * port; // Address Port
 } sock_info;
 #endif
+
 // Library Dependencies and Resources
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,4 +48,6 @@ typedef struct sock_info {
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <dirent.h>
+
 #endif // LIBRARIUM_H

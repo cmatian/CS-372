@@ -27,6 +27,5 @@ int socket_setup(struct addrinfo *, int);
 void listen_socket(int);
 void accept_connection(struct data_info *, int *, int *);
 void set_port(struct sock_info *, char **);
-void tether(int, struct addrinfo *, struct sock_info *);
 
 #endif // CONNECTION_H
