@@ -9,6 +9,7 @@
  * Last Modified:
  */
 
+#include <time.h>
 #include "data.h"
 #include "connection.h"
 
@@ -68,9 +69,9 @@ char **create_2d_array(int length) {
     return array;
 }
 
-void free_2d_array(char **storage) {
+void free_2d_array(char ** storage, int length) {
     int i = 0;
-    while (storage[i] != NULL) {
+    while (i < length) {
         free(storage[i]);
         i++;
     }
@@ -105,10 +106,12 @@ void get_directory(int *main_fd, struct sock_info *sock_arg, struct data_info *d
     // Send the contents of the directory.
     send_directory(main_fd, sock_arg, data_arg, storage, length);
 
-    free_2d_array(storage);
+    // Clear the array
+    free_2d_array(storage, length);
 }
 
 void send_directory(int *main_fd, struct sock_info *sock_arg, struct data_info *data_arg, char **storage, int length) {
+    printf("Preparing to send directory to the client...\n");
     sleep(1); // Sleep for a moment so that the client can catch up (Python is slower).
     char in_buffer[100] = "";
     /**
@@ -138,20 +141,15 @@ void send_directory(int *main_fd, struct sock_info *sock_arg, struct data_info *
      * Perform the file transfer and send the directory files over
      */
     for (int i = 0; i < length; i++) {
-        sleep(1);
-        char out_buffer[500] = "";
-        strcpy(out_buffer, storage[i]);
-        out_buffer[strlen(out_buffer)] = '\0';
-        printf("%lu\n", strlen(out_buffer));
-        write(sockfd, out_buffer, sizeof(out_buffer));
+        usleep(50000); // artificially slow down the transfer rate (0.05s)
+        int size = strlen(storage[i]);
+        write(sockfd, storage[i], size); // write
     }
     // Send a complete message
     write(sockfd, "complete", strlen("complete"));
+    printf("Directory transfer complete.\n");
 
-    close(sockfd); // Close out the TCP data socket
-    // Prolly crashing here...
-//    free_2d_array(storage); // Kill the 2d array
-
+    close(sockfd); // Close out the data socket
 }
 
 void data_command_router(int *main_fd, struct sock_info *sock_arg, struct data_info *data_arg) {

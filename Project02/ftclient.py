@@ -35,12 +35,12 @@ def create_socket():
     return clientSocket
 
 def create_server_socket():
-    serverSocket = socket(AF_INET, SOCK_STREAM)
     serverHost = gethostname()
     serverPort = int(sys.argv[len(sys.argv) - 1]) # Data Port = last item in the argv array
     serverSocket = socket(AF_INET, SOCK_STREAM)
     serverSocket.bind(('', serverPort))
     serverSocket.listen(1)
+    print(f'Incoming file transfer - client is now listening from {serverHost} on port {serverPort}.')
     return serverSocket
 
 def accept_from_server(serverSocket, clientSocket):
@@ -82,12 +82,14 @@ def main():
     serverSocket = create_server_socket()
     dataSocket = accept_from_server(serverSocket, clientSocket)
 
-    dir_payload = dataSocket.recv(2048).decode()
     print("Directory Contents")
+    dir_payload = dataSocket.recv(200).decode()
     while dir_payload != "complete":
         print(f'{dir_payload}')
-        dir_payload = dataSocket.recv(2048).decode()
-
+        dir_payload = dataSocket.recv(200).decode()
+    print("Waiting for server confirmation...", end="")
+    dataSocket.recv(150).decode()
+    print("Get Directory Complete...")
     dataSocket.close()
     clientSocket.close()
 

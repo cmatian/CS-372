@@ -24,6 +24,8 @@ void data_command_router(int *, struct sock_info *, struct data_info *);
 
 char ** create_2d_array(int);
 
+void free_2d_array(char **, int);
+
 int read_directory(char **);
 
 void send_directory(int *, struct sock_info *, struct data_info *, char **, int);
