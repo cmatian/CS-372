@@ -49,5 +49,6 @@ typedef struct sock_info {
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <dirent.h>
+#include <time.h>
 
 #endif // LIBRARIUM_H

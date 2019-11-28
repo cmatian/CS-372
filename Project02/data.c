@@ -9,7 +9,6 @@
  * Last Modified:
  */
 
-#include <time.h>
 #include "data.h"
 #include "connection.h"
 
@@ -111,8 +110,12 @@ void get_directory(int *main_fd, struct sock_info *sock_arg, struct data_info *d
 }
 
 void send_directory(int *main_fd, struct sock_info *sock_arg, struct data_info *data_arg, char **storage, int length) {
-    printf("Preparing to send directory to the client...\n");
-    sleep(1); // Sleep for a moment so that the client can catch up (Python is slower).
+    printf("Server: Preparing to send directory to the client...\n");
+    /**
+     * Sleep for one second. During this pause client will send a "ready" message over the main_fd arg
+     * indicating that it is ready and listening for connections.
+     */
+    sleep(1);
     char in_buffer[100] = "";
     /**
      * Generate the connection. The client has to be LISTENING first before we can proceed. Otherwise
@@ -121,26 +124,34 @@ void send_directory(int *main_fd, struct sock_info *sock_arg, struct data_info *
     while (1) {
         read(*main_fd, in_buffer, sizeof(in_buffer));
         if (strncmp(in_buffer, "ready", strlen("ready")) == 0) {
-            printf("Ready for directory data transfer...\n");
+            printf("Server: Client is ready - creating data connection.\n");
             break;
         }
     }
 
     memset(in_buffer, '\0', sizeof(in_buffer));
 
+    /**
+     * Connect to the client using a similar process to when the main_fd socket was produced.
+     * The only difference is that we're using connect() and not bind(). Additionally, we don't need
+     * the listen() function - the client is the listener.
+     */
     struct addrinfo *p = get_address_info(sock_arg);
     int sockfd = socket_setup(p, 1); // Second param = try to connect to client on data port (don't bind).
 
     if (p == NULL || sockfd < 0) {
         close(sockfd);
-        fprintf(stderr, "Failed to connect back to the client at %s on  data port %s.\n", data_arg->address,
+        fprintf(stderr, "Server: Failed to connect back to the client at %s on  data port %s.\n", data_arg->address,
                 data_arg->port);
         exit(1);
     }
-    printf("Successfully connected back to the client at %s on data port %s.\n", data_arg->address, data_arg->port);
+    printf("Server: Successfully connected back to the client at %s on data port %s.\n", data_arg->address, data_arg->port);
 
     /**
-     * Perform the file transfer and send the directory files over
+     * Perform the file transfer and send the directory files over. I am throttling the loop with a brief pause (150ms)
+     * because of newline issues on the client. The transfer happens so fast that the client fails to append newlines
+     * and causes the directory to appear on one line. 150ms gives enough time for the client read loop to complete and
+     * be ready for the next server write.
      */
     for (int i = 0; i < length; i++) {
         usleep(150000); // artificially slow down the transfer rate (150ms) - this will stop data from flooding the client buffer
@@ -149,19 +160,22 @@ void send_directory(int *main_fd, struct sock_info *sock_arg, struct data_info *
     }
     // Send a complete message
     write(sockfd, "__complete__", strlen("__complete__"));
-    read(sockfd, in_buffer, 100); // Wait for a confirmation from the client.
-    printf("Message from client: %s", in_buffer);
-    printf("Directory transfer complete.\n");
+    printf("Server: Directory transfer complete.\n");
 
     close(sockfd); // Close out the data socket
 }
 
 void data_command_router(int *main_fd, struct sock_info *sock_arg, struct data_info *data_arg) {
     if (strncmp(data_arg->command, "-l", strlen("-l")) == 0) {
-        // Command is to "-l" directory
+        // Command is "-l" (Get Directory)
+        printf("Server: Client requested the current directory listing.\n");
         get_directory(main_fd, sock_arg, data_arg);
+    } else if(strncmp(data_arg->command, "-g", strlen("-g")) == 0) {
+        // Command is "-g" (Get File)
+        printf("Server: Client requested a file: { %s }.", data_arg->file_name);
     } else {
-        // Command is to "-g" file
+        printf("Server: Client command %s not recognized.\n", data_arg->command);
+        return;
     }
 }
 

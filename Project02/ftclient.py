@@ -3,8 +3,9 @@
 
 from socket import *
 import sys
-# import os
 
+
+# import os
 
 def return_help():
     if len(sys.argv) < 5 and sys.argv[3] == "help":
@@ -17,7 +18,7 @@ def return_help():
               f"\t\t- The [command] is of the form '-g or '-l'.\n"
               f"\t\t- If the [command] is specified as '-g', you need to supply the [file name] with the name of the file you want to retrieve.\n"
               f"\t\t- If the [command] is specified as '-l' you can skip the [file name] and instead specify [data port].\n"
-              f"\t\t- The [data port] is the port the server will be using to send data back to the client.\n")
+              f"\t\t- The [data port] is the port the server will be using to send data back to the client.\n\n")
         sys.exit(0)
 
 
@@ -31,29 +32,32 @@ def validate_arguments():
 
 
 def create_socket():
-    clientSocket = socket(AF_INET, SOCK_STREAM) # connect using TCP over IPv4
-    return clientSocket
+    client_socket = socket(AF_INET, SOCK_STREAM)  # connect using TCP over IPv4
+    return client_socket
+
 
 def create_server_socket():
-    serverHost = gethostname()
-    serverPort = int(sys.argv[len(sys.argv) - 1]) # Data Port = last item in the argv array
-    serverSocket = socket(AF_INET, SOCK_STREAM)
-    serverSocket.bind(('', serverPort))
-    serverSocket.listen(1)
-    print(f'Incoming file transfer - client is now listening from {serverHost} on port {serverPort}.')
-    return serverSocket
+    server_host = gethostname()
+    server_port = int(sys.argv[len(sys.argv) - 1])  # Data Port = last item in the argv array
+    server_socket = socket(AF_INET, SOCK_STREAM)
+    server_socket.bind(('', server_port))
+    server_socket.listen(1)
+    print(f'Incoming file transfer - client is now listening from {server_host} on port {server_port}.')
+    return server_socket
 
-def accept_from_server(serverSocket, clientSocket):
-    clientSocket.send("ready".encode())
-    data_socket, address = serverSocket.accept()
+
+def accept_from_server(server_socket, client_socket):
+    client_socket.send("ready".encode())
+    data_socket, address = server_socket.accept()
     return data_socket
 
 
-def connect_to_server(clientSocket):
-    # Key: [2] = server name, [3] = server port
-    serverName = sys.argv[1]
-    serverPort = int(sys.argv[2])
-    clientSocket.connect((serverName, serverPort))
+def connect_to_server(client_socket):
+    # Key: [1] = server name, [2] = server port
+    server_name = sys.argv[1]
+    server_port = int(sys.argv[2])
+    client_socket.connect((server_name, server_port))
+
 
 # Initial payload is the bits of data we want to send to the server.
 # We want the server to know the command, the file to look for (if the command is -g), and what the data port is.
@@ -65,39 +69,42 @@ def create_initial_payload():
         fn_payload.append(sys.argv[i])
     return fn_payload
 
-def send_initial_payload(payload, clientSocket):
-    clientSocket.send(str(len(payload)).encode()) # Send the size of the payload.
-    clientSocket.recv(2048).decode()
+
+def send_initial_payload(payload, client_socket):
+    client_socket.send(str(len(payload)).encode())  # Send the size of the payload.
+    client_socket.recv(2048).decode()
     for i in range(len(payload)):
-        clientSocket.send((payload[i] + '\0').encode())
-        clientSocket.recv(2048).decode() # Wait for a server response before continuing the loop
+        client_socket.send((payload[i] + '\0').encode())
+        client_socket.recv(2048).decode()  # Wait for a server response before continuing the loop
+
+
+def get_directory(data_socket):
+    print("\n=== Directory Contents ===\n")
+    dir_payload = data_socket.recv(200).decode()
+    while "__complete__" not in dir_payload:
+        print(f'\t- {dir_payload}')
+        dir_payload = data_socket.recv(200).decode()
+    data_socket.recv(200).decode()
+    print("\nGet Directory Complete.\n")
+
 
 def main():
-    clientSocket = create_socket() # Initial client socket
-    payload = create_initial_payload() # Initial payload
-    connect_to_server(clientSocket) # Connect to the server
-    send_initial_payload(payload, clientSocket) # Send the initial payload data to the server (command, [filename], port).
+    client_socket = create_socket()  # Initial client socket
+    payload = create_initial_payload()  # Initial payload
+    connect_to_server(client_socket)  # Connect to the server
+    send_initial_payload(payload, client_socket)  # Send the initial payload data to the server
 
     # Prep a socket for connection.
-    serverSocket = create_server_socket()
-    dataSocket = accept_from_server(serverSocket, clientSocket)
+    server_socket = create_server_socket()
+    data_socket = accept_from_server(server_socket, client_socket)
 
-    print("Directory Contents")
-    dir_payload = dataSocket.recv(200).decode()
-    i = 0
-    while "__complete__" not in dir_payload:
-        print(f'{dir_payload}')
-        dir_payload = dataSocket.recv(200).decode()
-        i += 1
-        if(i == 25): # hard exit, stop endless loops for debug
-            break
-    print("Out of the loop...sending message to server")
-    dataSocket.send("h\0".encode())
-    print("Waiting for server confirmation...", end="")
-    dataSocket.recv(200).decode()
-    print("Get Directory Complete...")
-    dataSocket.close()
-    clientSocket.close()
-    return
+    # Get the directory
+    get_directory(data_socket)
+
+    # Get a file - client should do some client side checking to ensure they're ok with overwriting if it exists.
+
+    # Purge all open sockets
+    data_socket.close()
+    client_socket.close()
+
 main()
-

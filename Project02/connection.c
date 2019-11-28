@@ -50,7 +50,7 @@ struct addrinfo * get_address_info(struct sock_info * sock_arg) {
 
     // Set up addr struct for later - we really only need to pass in the port. We'll use the server's native IP.
     if ((status = getaddrinfo(arg, sock_arg->port, &hints, &res)) != 0) {
-        fprintf(stderr, "Exception - get_address_info error: %s\n", gai_strerror(status));
+        fprintf(stderr, "Server: Exception - get_address_info error: %s\n", gai_strerror(status));
         exit(1);
     }
     return res;
@@ -63,7 +63,7 @@ int socket_setup(struct addrinfo * p, int type) {
         sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
         if (sockfd == -1) {
             close(sockfd);
-            fprintf(stderr, "Exception - Socket creation error... trying a different address.\n");
+            fprintf(stderr, "Server: Exception - Socket creation error... trying a different address.\n");
             continue;
         }
 
@@ -76,14 +76,14 @@ int socket_setup(struct addrinfo * p, int type) {
             sbind = bind(sockfd, p->ai_addr, p->ai_addrlen);
             if (sbind == -1) {
                 close(sockfd);
-                fprintf(stderr, "Exception - Socket binding error... trying a different address.\n");
+                fprintf(stderr, "Server: Exception - Socket binding error - trying a different address.\n");
                 continue;
             }
         } else {
             sconn = connect(sockfd, p->ai_addr, p->ai_addrlen);
             if(sconn == -1) {
                 close(sockfd);
-                fprintf(stderr, "Exception - Socket connection error... trying a different address.\n");
+                fprintf(stderr, "Server: Exception - Socket connection error - trying a different address.\n");
                 continue;
             }
         }
@@ -96,7 +96,7 @@ void listen_socket(int sockfd) {
     // Listen for connections - throw errors if any arise.
     if(listen(sockfd, BACKLOG) == -1) {
         close(sockfd);
-        fprintf(stderr, "Exception - listen_socket error.\n");
+        fprintf(stderr, "Server: Exception - listen_socket error.\n");
         exit(1);
     }
 }
@@ -111,7 +111,7 @@ void accept_connection(struct data_info * data_struct, int * sock_fd, int * new_
 
     // Convert the incoming address into a string for later.
     inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
-    printf("Received a connection from address %s.\n", s);
+    printf("Server: Received a connection from the following address - %s.\n", s);
 
     // Store the address into the sock_info structure.
     data_struct->address = malloc(100 * sizeof(s));

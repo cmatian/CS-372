@@ -10,17 +10,28 @@
  */
 
 /* Source Citation:
+ *
  *  - Beej's TCP Client and Server Src: https://beej.us/guide/bgnet/html/multi/clientserver.html#simpleclient
  *      - I used a large portion of his starter code and modified it for my program.
  *      - I used portions of his server.c code and abstracted parts of his listen, accept, bind, etc sample functions.
  *
  *  - Christopher Matian's Project 1:
- *      - I some code from my assignment one project. Most of it is the already modular functions used in the
- *        to establish a connection between client and server.
+ *      - Some code from my own project 1. Most of it is the already modular functions used
+ *        to establish a connection between the client and server.
  *      - I took code from there and broke it down further into more modular chunks based on Beej's specifications.
  *
  *  - Makefile Sample: https://www.gribblelab.org/CBootCamp/12_Compiling_linking_Makefile_header_files.html
  *      - Modified his example for my makefile.
+ *
+ *  - Get Directory Files: https://stackoverflow.com/questions/4204666/how-to-list-files-in-a-directory-in-a-c-program
+ *      - Used 2 comments to construct the function:
+ *          1. https://stackoverflow.com/a/4204758      (main answer)
+ *          2. https://stackoverflow.com/a/17683417     (improvement to answer to select valid entries)
+ *
+ *  - Create and return a 2d array: https://stackoverflow.com/a/5201762
+ *      - Abstracted the code in order to produce a char array that can hold strings. This was used to
+ *        hold data which was looped over and sent through the data socket.
+ *
  */
 
 // Header File(s)
@@ -49,15 +60,15 @@ int main(int argc, char * argv[]) {
 
     // Validate p and sockfd
     if (p == NULL || sockfd < 0)  {
-        fprintf(stderr, "Failed to bind the server.\n");
+        fprintf(stderr, "Server: Failed to bind or create the socket.\n");
         exit(1);
     }
     // Set up the listener on the server.
     listen_socket(sockfd);
 
-    int ctr = 10; // delete later
-    printf("Server was successfully initialized on port %s - listening for a new connection.\n", control_socket.port);
-    while(ctr > 0) {
+    int ctr = 0; // Server loop counter.
+    printf("Server: Successfully initialized on port %s - listening for a new connection.\n", control_socket.port);
+    while(ctr < 10) {
         struct data_info payload;
         // 1. Run the server and wait for new connections.
         int newfd;
@@ -65,12 +76,13 @@ int main(int argc, char * argv[]) {
         // Validate the connection
         if (newfd == -1) {
             close(newfd);
-            fprintf(stderr, "Exception - there was an issue with the connection.\n");
-            ctr--;
+            fprintf(stderr, "Server: Exception - there was an issue with the connection.\n");
+            ctr++;
             continue;
         }
 
         // 2. Connection was found - get the payload length first
+        //    - Payload length is used in the setup function which associates the incoming data to the payload structure.
         int payload_length = get_payload_length(&newfd);
 
         // 3. Initialize a 2d array structure and grab the actual payload data.
@@ -87,8 +99,8 @@ int main(int argc, char * argv[]) {
 
         close(newfd); // Close socket for new one.
         free_data(&payload); // clean up
-        ctr--; // Delete later - just getting rid of annoying endless loop inspection errors
+        ctr++; // Server is limited to 10 loops (each loop being a new connection).
     }
-
+    printf("Server loop limit reached - shutting down.\n");
     return 0;
 }
