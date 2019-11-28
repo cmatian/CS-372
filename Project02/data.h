@@ -9,20 +9,19 @@
  * Last Modified:
  */
 
-#include "connection.h"
-
-#ifndef data_info_struct
-#define data_info_struct
-typedef struct data_info {
-    char * command;
-    char * port;
-    char * file_name;
-} data_info;
-#endif
+#include "librarium.h"
 
 #ifndef DATA_H
 #define DATA_H
 
 int get_payload_length(int *);
+
+void setup_data_info(int *, int, struct data_info *);
+
+void prepare_data_socket(struct sock_info *, struct data_info *);
+
+void data_command_router(struct sock_info *, struct data_info *);
+
+void free_data(struct data_info *);
 
 #endif // DATA_H

@@ -3,7 +3,8 @@
 
 from socket import *
 import sys
-import os
+# import os
+
 
 def return_help():
     if len(sys.argv) < 5 and sys.argv[3] == "help":
@@ -19,6 +20,7 @@ def return_help():
               f"\t\t- The [data port] is the port the server will be using to send data back to the client.\n")
         sys.exit(0)
 
+
 def validate_arguments():
     length = len(sys.argv)
     if length < 5 or length > 6:
@@ -27,9 +29,11 @@ def validate_arguments():
               f"For more information type \"python3 ftclient.py help\"")
         sys.exit(1)
 
+
 def create_socket():
     clientSocket = socket(AF_INET, SOCK_STREAM) # connect using TCP over IPv4
     return clientSocket
+
 
 def connect_to_server(clientSocket):
     # Key: [2] = server name, [3] = server port
@@ -37,15 +41,26 @@ def connect_to_server(clientSocket):
     serverPort = int(sys.argv[2])
     clientSocket.connect((serverName, serverPort))
 
+
 # Initial payload is the bits of data we want to send to the server.
 # We want the server to know the command, the file to look for (if the command is -g), and what the data port is.
 # We send this data along the first time the connection is made.
 def create_initial_payload():
-    payload = []
+    fn_payload = []
     # Begin at the command arg argv[4]
     for i in range(3, len(sys.argv)):
-        payload.append(sys.argv[i])
-    return payload
+        fn_payload.append(sys.argv[i])
+    return fn_payload
+
+
+def send_initial_payload(payload, clientSocket):
+    clientSocket.send(str(len(payload)).encode()) # Send the size of the payload.
+    response = clientSocket.recv(2048).decode()
+    print(response)
+    for i in range(len(payload)):
+        clientSocket.send((payload[i] + '\0').encode())
+        response = clientSocket.recv(2048).decode() # Wait for a server response before continuing the loop
+        print(response)
 
 
 clientSocket = create_socket()
@@ -59,20 +74,10 @@ connect_to_server(clientSocket)
 # CLIENT sends the first piece of the payload. Server responds with "next".
 # CLIENT sends the next piece of the payload (and so on). Server responds with "next".
 # When we're done sending the payload we send another message to the server indicating that we are done.
+send_initial_payload(payload, clientSocket)
 
-# Send our initial details
-clientSocket.send(str(len(payload)).encode()) # Send the size of the payload.
-response = clientSocket.recv(2048).decode()
-print(response)
+clientSocket.send("complete".encode())
 
-# for i in range(len(payload)):
-#     clientSocket.send((payload[i] + '\0').encode())
-#     response = clientSocket.recv(2048).decode() # Wait for a server response before continuing the loop
-#     print(response)
-#
-# clientSocket.send("complete".encode())
-
-#clientSocket.send("Hello".encode())
 
 # modMessage = clientSocket.recv(2048)
 

@@ -42,10 +42,10 @@ struct addrinfo * get_address_info(struct sock_info * sock_arg) {
     hints.ai_socktype = SOCK_STREAM; // TCP
     hints.ai_protocol = 0;
     // Evaluate whether our address is set or not
-    if(strcmp(sock_arg->name, "NULL") == 0) {
+    if(strcmp(sock_arg->address, "NULL") == 0) {
         arg = NULL;
     } else {
-        arg = sock_arg->name;
+        arg = sock_arg->address;
     }
 
     // Set up addr struct for later - we really only need to pass in the port. We'll use the server's native IP.
@@ -57,7 +57,6 @@ struct addrinfo * get_address_info(struct sock_info * sock_arg) {
 }
 
 int socket_setup(struct addrinfo * p, int type) {
-    char s[INET6_ADDRSTRLEN];
     int status;
     int sockfd = 0;
     int yes = 1;
@@ -108,7 +107,7 @@ void listen_socket(int sockfd) {
     }
 }
 
-void accept_connection(struct sock_info * sock_arg, int * sock_fd, int * new_fd) {
+void accept_connection(struct data_info * data_struct, int * sock_fd, int * new_fd) {
     char s[INET6_ADDRSTRLEN];
     struct sockaddr_storage their_addr;
     socklen_t sin_size = sizeof their_addr;
@@ -121,39 +120,8 @@ void accept_connection(struct sock_info * sock_arg, int * sock_fd, int * new_fd)
     printf("Received a connection from address %s.\n", s);
 
     // Store the address into the sock_info structure.
-    sock_arg->name = s;
-}
-
-// Might not actually need this...
-void tether(int sockfd, struct addrinfo * p, struct sock_info * sock_arg) {
-    char s[INET6_ADDRSTRLEN];
-    int result;
-    if((result = connect(sockfd, p->ai_addr, p->ai_addrlen)) == -1) {
-        fprintf(stderr, "Exception - tether (connection) error.\n");
-        exit(1);
-    }
-    // Converts the address into a legible string
-    inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
-
-    // Store the address into our server struct (usually socket_2)
-    sock_arg->name = s;
-}
-
-/**
- * Function:            set_addr_and_port
- *
- * Description:         The function will assign the sock_info structure's name and port
- *
- * Pre-condition:       Assumes that the port was set on the command line argument, and that the
- *                      server structure was initialized at run time. The sock_info address will be
- *                      set when the connection is made between client and sre
- *
- * Post-condition:      The sock_info name and sock_info port will be set by the function for use throughout the program.
- *
- */
-void set_addr_and_port(struct sock_info * sock_arg, char * addr, char * port) {
-    sock_arg->name = addr; // Set Address
-    sock_arg->port = port; // Set Port
+    data_struct->address = malloc(100 * sizeof(s));
+    strcpy(data_struct->address, s);
 }
 
 /**
@@ -168,7 +136,7 @@ void set_addr_and_port(struct sock_info * sock_arg, char * addr, char * port) {
  *
  */
 void set_port(struct sock_info * sock_arg, char ** argv) {
-    sock_arg->name = "NULL";
+    sock_arg->address = "NULL";
     sock_arg->port = argv[1];
 }
 

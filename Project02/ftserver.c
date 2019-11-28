@@ -34,18 +34,17 @@ int main(int argc, char * argv[]) {
     validate_arguments(argc); // Expected 2 args in the form ./ftserver <control_port_number>
 
     /**
-     * socket_1: Holds the address and port information of the server. The address is going to be NULL, while the port will be
-     *           initialized at runtime using the argument from argv.
-     * socket_2: Holds the address and port information from the client. The address will be translated when the connection is
-     *           first made (from the client via intop). The tether function will set the address when the client connects.
+     * control_socket: Holds the address and port information of the server. The address is going to be NULL, while the port
+     *                 will be initialized at runtime using the argument from argv.
      *
-     * I need to set the socket addresses and port numbers manually rather than using the helper function from Project 01.
+     * data_socket:    Holds the address and port information from the client. The address will be translated when the connection is
+     *                 first made (from the client via ntop). The tether function will set the address when the client connects.
      */
-    struct sock_info socket_1, socket_2;
-    set_port(&socket_1, argv); // Set up address -> "NULL" and port -> argv[1]
+    struct sock_info control_socket, data_socket;
+    set_port(&control_socket, argv); // Set up address -> "NULL" and port -> argv[1]
 
     // Set up the address and the socket
-    struct addrinfo * p = get_address_info(&socket_1);
+    struct addrinfo * p = get_address_info(&control_socket);
     int sockfd = socket_setup(p, 0);
 
     // Validate p and sockfd
@@ -58,56 +57,43 @@ int main(int argc, char * argv[]) {
 
     int ctr = 500; // delete later
 
-    printf("Server was successfully initialized on port %s - listening for a new connection.\n", socket_1.port);
+    printf("Server was successfully initialized on port %s - listening for a new connection.\n", control_socket.port);
     while(ctr > 0) {
+        struct data_info payload;
         // 1. Run the server and wait for new connections.
-        int new_fd;
-        accept_connection(&socket_2, &sockfd, &new_fd);
+        int newfd;
+        accept_connection(&payload, &sockfd, &newfd);
         // Validate the connection
-        if (new_fd == -1) {
+        if (newfd == -1) {
             fprintf(stderr, "Exception - there was an issue with the connection.");
             continue;
         }
 
         // 2. Connection was found - get the payload length first
-        int payload_length = get_payload_length(&new_fd);
+        int payload_length = get_payload_length(&newfd);
 
         // 3. Initialize a 2d array structure and grab the actual payload data.
-        char data_info[payload_length][100];
+        //    - The payload data here consists of the command, possibly the filename, and lastly the data port number.
+        setup_data_info(&newfd, payload_length, &payload);
 
+        // 4. Initialize socket_2 to just hold the data from our payload struct
+        prepare_data_socket(&data_socket, &payload);
 
-//        // Refresh in_buffer every time we read on it
-//        memset(in_buffer, '\0', sizeof(in_buffer));
-//        read(new_fd, in_buffer, sizeof(in_buffer));
-//        printf("%s\n", in_buffer);
-//        if(strstr(in_buffer, "initialize")) {
-//            printf("Hello\n");
-//            write(new_fd, "ready", strlen("ready"));
-//
-//            memset(in_buffer, '\0', sizeof(in_buffer));
-//            read(new_fd, in_buffer, sizeof(in_buffer)); // Read in the length of the payload data
-//
-//            init_len = atoi(in_buffer); // Set the length
-//            char init[init_len][100]; // initialize the 2d array to the init_len
-//
-//            for(int i = 0; i < init_len; i++) {
-//                write(new_fd, "ready", strlen("ready")); // Tell the client we are ready.
-//                read(new_fd, init[i], sizeof(init[i])); // Read the first item in.
-//                printf("init %d: %s\n", i, init[i]);
-//            }
-//
-//            write(new_fd, "ready", strlen("ready"));
-//
-//            memset(in_buffer, '\0', sizeof(in_buffer));
-//            read(new_fd, in_buffer, sizeof(in_buffer));
-//
-//            if(strstr(in_buffer, "complete") == 0) {
-//                close(new_fd); // Close socket for new one.
-//                continue;
-//            }
-//        }
+        printf("Inside payload:\n");
+        printf("Address: %s\n", payload.address);
+        printf("Port: %s\n", payload.port);
+        printf("File: %s\n", payload.file_name);
+        printf("Command: %s\n", payload.command);
 
-        close(new_fd); // Close socket for new one.
+        printf("\nInside data socket:\n");
+        printf("Address: %s\n", data_socket.address);
+        printf("Port: %s\n\n", data_socket.port);
+
+        // 5. Pass our data socket and payload structure to a function to route based on commands.
+        data_command_router(&data_socket, &payload);
+
+        free_data(&payload); // clean up
+        close(newfd); // Close socket for new one.
         ctr--; // Delete later - just getting rid of annoying endless loop inspection errors
     }
 
