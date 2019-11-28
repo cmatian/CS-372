@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -std=gnu11
-DEPS = connection.h validation.h
-OBJ = ftserver.o connection.o validation.o
+DEPS = librarium.h connection.h validation.h data.h
+OBJ = ftserver.o connection.o validation.o data.o
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<
