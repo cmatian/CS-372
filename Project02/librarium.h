@@ -6,7 +6,7 @@
  *                          file from that directory.
  * Course Name:             CS-372 400 Fall Quarter
  * Created On:              11/27/2019 - 12:09pm
- * Last Modified:
+ * Last Modified:           11/29/2019 - 2:26pm
  */
 
 #ifndef LIBRARIUM_H
@@ -49,6 +49,7 @@ typedef struct sock_info {
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <dirent.h>
+#include <sys/fcntl.h>
 #include <time.h>
 
 #endif // LIBRARIUM_H

@@ -6,12 +6,22 @@
  *                          file from that directory.
  * Course Name:             CS-372 400 Fall Quarter
  * Created On:              11/24/2019 - 9:53pm
- * Last Modified:
+ * Last Modified:           11/29/2019 - 2:56pm
  */
 
 #include "validation.h"
 #include "connection.h"
 
+/**
+ * Function:            validate_arguments
+ *
+ * Description:         Validates the argument count received from the commandline.
+ *
+ * Pre-condition:       Program has been executed and there are arguments in the command line.
+ *
+ * Post-condition:      The function proceeds normally if there are more than 2 arguments. Exits otherwise.
+ *
+ */
 void validate_arguments(int argc) {
     if(argc < 2) {
         fprintf(stderr, "Exception - Invalid argument count.\nCorrect usage: \"./ftserver <port>\"");

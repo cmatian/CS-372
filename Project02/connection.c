@@ -6,7 +6,7 @@
  *                          file from that directory.
  * Course Name:             CS-372 400 Fall Quarter
  * Created On:              11/21/2019 - 5:59pm
- * Last Modified:
+ * Last Modified:           11/29/2019 - 2:26pm
  */
 
 // Header File(s)
@@ -30,6 +30,16 @@ void * get_in_addr(struct sockaddr * sa) {
     return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
 
+/**
+ * Function:            get_address_info
+ *
+ * Description:         Produces an address structure for use in socket_setup
+ *
+ * Pre-condition:       Assumes that the sock_info structure was initialized with an address (name or NULL) and port #.
+ *
+ * Post-condition:      Returns a result which consists of potential address structures.
+ *
+ */
 struct addrinfo * get_address_info(struct sock_info * sock_arg) {
     struct addrinfo hints;
     struct addrinfo * res;
@@ -56,6 +66,17 @@ struct addrinfo * get_address_info(struct sock_info * sock_arg) {
     return res;
 }
 
+
+/**
+ * Function:            socket_setup
+ *
+ * Description:         Creates a socket using the available address structures from get_address_info
+ *
+ * Pre-condition:       Assumes that an address structure was produced and that the type was set.
+ *
+ * Post-condition:      The function will produce a socket that can be used as a listener for incoming connections.
+ *
+ */
 int socket_setup(struct addrinfo * p, int type) {
     int sockfd = 0, sbind, sconn;
     // Loop through the address structures in p until we find a usable address.
@@ -92,6 +113,17 @@ int socket_setup(struct addrinfo * p, int type) {
     return sockfd;
 }
 
+
+/**
+ * Function:            listen_socket
+ *
+ * Description:         Creates a listener on the server socket for incoming connections.
+ *
+ * Pre-condition:       Assumes that the server socket was created and bound to a valid address and port.
+ *
+ * Post-condition:      The server will sit and have a listener available for N connections (N = BACKLOG)
+ *
+ */
 void listen_socket(int sockfd) {
     // Listen for connections - throw errors if any arise.
     if(listen(sockfd, BACKLOG) == -1) {
@@ -101,6 +133,18 @@ void listen_socket(int sockfd) {
     }
 }
 
+
+/**
+ * Function:            accept_connection
+ *
+ * Description:         Accepts an incoming connection from the client.
+ *
+ * Pre-condition:       Assumes that server socket was created and that the data_info struct is initialized.
+ *
+ * Post-condition:      Accepts and creates a connection between the client and server over the control port.
+ *                      Additionally, copies the address of the client into the data_struct->address
+ *
+ */
 void accept_connection(struct data_info * data_struct, int * sock_fd, int * new_fd) {
     char s[INET6_ADDRSTRLEN];
     struct sockaddr_storage their_addr;
@@ -117,6 +161,7 @@ void accept_connection(struct data_info * data_struct, int * sock_fd, int * new_
     data_struct->address = malloc(100 * sizeof(s));
     strcpy(data_struct->address, s);
 }
+
 
 /**
  * Function:            set_port

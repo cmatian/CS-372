@@ -1,15 +1,35 @@
+# Programmer Name:         Christopher Matian
+# Program Name:            Simple FTP Server and Client
+# Program Description:     This is a simple FTP Server and Client program that allows a user (the client) to connect
+#                          to the server and request either a list of the server's current directory, or download a
+#                          file from that directory.
+# Course Name:             CS-372 400 Fall Quarter
+# Date Created:            11/21/2019 - 5:53pm
+# Last Modified:           11/29/2019 - 9:10pm
+
+
 # Requires Python3
 # Argument order is not validated - you must take care to enter the arguments in the correct order.
+
 
 from socket import *
 import sys
 import os
 
+# Source Citation:
+#
+# Flushing input: https://stackoverflow.com/a/38993222 --
+# Used the linked function so that I can evaluate which import to use depending on the OS
+#
+# Kurose and Ross Networking Textbook --
+# Used the Python starter code for the client from section 2.7. It barely resembles the original and has
+# been modified heavily.
+
+
 # Function:         flush_input
 #
 # Description:      The function will flush the io buffer and allow subsequent loops to have a
-#                   a fresh buffer to work with. Alleviates a buffer bug when the user types
-#                   messages on UNIX servers even though it's not the server's turn to send a message.
+#                   a fresh buffer to work with.
 #
 # Pre-condition:    None
 #
@@ -25,6 +45,14 @@ def flush_input():
         import sys, termios
         termios.tcflush(sys.stdin, termios.TCIOFLUSH)
 
+
+# Function:         return_help
+#
+# Description:      Returns a helpful printout of syntax and argument rules for using this program.
+#
+# Pre-condition:    "help" is the 2nd argument and validate_arguments has been called.
+#
+# Post-condition:   Exits the program and provides a helpful printout.
 def return_help():
     print(f"ftclient information:\n"
           f"\t- Usage: \"python3 ftclient.py [flip address] [server port] [command] [file name (only if command is -g)] [data port]\".\n"
@@ -39,6 +67,13 @@ def return_help():
     sys.exit(0)
 
 
+# Function:         validate_arguments
+#
+# Description:      Takes in the command-line arguments and validates them.
+#
+# Pre-condition:    Command line arguments have been entered.
+#
+# Post-condition:   Either exits (invalid argument count or type) or allows the program to proceed.
 def validate_arguments():
     length = len(sys.argv)
 
@@ -63,11 +98,25 @@ def validate_arguments():
         sys.exit(1)
 
 
+# Function:         create_socket
+#
+# Description:      Creates a client socket.
+#
+# Pre-condition:    Arguments were validated correctly.
+#
+# Post-condition:   Creates and returns a client socket for use throughout the program.
 def create_socket():
     client_socket = socket(AF_INET, SOCK_STREAM)  # connect using TCP over IPv4
     return client_socket
 
 
+# Function:         create_server_socket
+#
+# Description:      Similar to create_socket but produces a socket for the server (binds and listens)
+#
+# Pre-condition:    N/A
+#
+# Post-condition:   Returns a server socket which is bound to the data port and listening for a connection.
 def create_server_socket():
     server_host = gethostname()
     server_port = int(sys.argv[len(sys.argv) - 1])  # Data Port = last item in the argv array
@@ -78,12 +127,26 @@ def create_server_socket():
     return server_socket
 
 
+# Function:         accept_from_server
+#
+# Description:      Produces a data_socket after receiving a ready signal from the server.
+#
+# Pre-condition:    server_socket and client_socket have been created and initialized.
+#
+# Post-condition:   creates a data_socket which accepts the connection from the server and returns it.
 def accept_from_server(server_socket, client_socket):
-    client_socket.send("ready".encode()) # Server wakes up from sleep and reads this ready message
+    client_socket.send("ready".encode())    # Server wakes up from sleep and reads this ready message
     data_socket, address = server_socket.accept()
     return data_socket
 
 
+# Function:         validate_arguments
+#
+# Description:      Creates a connection from the client to the server.
+#
+# Pre-condition:    client_socket is initialized.
+#
+# Post-condition:   Connects the client_socket to the server by name and port.
 def connect_to_server(client_socket):
     # Key: [1] = server name, [2] = server port
     server_name = sys.argv[1]
@@ -91,9 +154,13 @@ def connect_to_server(client_socket):
     client_socket.connect((server_name, server_port))
 
 
-# Initial payload is the bits of data we want to send to the server.
-# We want the server to know the command, the file to look for (if the command is -g), and what the data port is.
-# We send this data along the first time the connection is made.
+# Function:         create_initial_payload
+#
+# Description:      Takes in the command-line arguments and constructs a payload list.
+#
+# Pre-condition:    Command-line arguments have been validated.
+#
+# Post-condition:   Returns a payload consisting of key pieces of data we need to send to the server.
 def create_initial_payload():
     fn_payload = []
     # Begin at the command arg argv[3]
@@ -102,6 +169,13 @@ def create_initial_payload():
     return fn_payload
 
 
+# Function:         send_initial_payload
+#
+# Description:      Sends the payload we created earlier to the server.
+#
+# Pre-condition:    Payload has been produced and the client socket is connected.
+#
+# Post-condition:   Sends the payload over the control port/connection that we produced.
 def send_initial_payload(payload, client_socket):
     client_socket.send(str(len(payload)).encode())  # Send the size of the payload.
     client_socket.recv(2048).decode()
@@ -110,6 +184,13 @@ def send_initial_payload(payload, client_socket):
         client_socket.recv(2048).decode()  # Wait for a server response before continuing the loop
 
 
+# Function:         get_directory
+#
+# Description:      Gets directory input from the server over the data socket connection.
+#
+# Pre-condition:    Data socket has been created and connected.
+#
+# Post-condition:   Receives and prints out the directory send by the server over the data connection.
 def get_directory(data_socket):
     print("\n=== Directory Contents ===\n")
     dir_payload = data_socket.recv(400).decode()
@@ -120,6 +201,14 @@ def get_directory(data_socket):
     print("\nGet Directory Complete.\n")
 
 
+# Function:         get_file
+#
+# Description:      Similar to get_directory but instead reads in file data and produces/overwrites a file with the data
+#
+# Pre-condition:    Data socket has been created and connected. The file name is passed in via command line.
+#
+# Post-condition:   Creates a file in the local directory (of the python client). If the file doesn't exist this
+#                   function won't execute.
 def get_file(data_socket, file):
     fd = file
     with open(fd, "w", encoding="utf-8") as f:
@@ -128,12 +217,21 @@ def get_file(data_socket, file):
         while "__complete__" not in file_payload:
             f.write(file_payload)
             file_payload = data_socket.recv(2048).decode()
-        data_socket.recv(400).decode() # Receive a final message from server indicating completion
+        data_socket.recv(400).decode()  # Receive a final message from server indicating completion
         print("\nFile transfer complete.\n")
 
+
+# Function:         validate_g_command
+#
+# Description:      Validates the local directory for files of the same name.
+#
+# Pre-condition:    -g command has been passed through the command line.
+#
+# Post-condition:   Checks the current directory of the client and verifies that the file doesn't already exist.
+#                   If it does, it will ask the user to confirm whether they want to overwrite it.
 def validate_g_command():
     if sys.argv[3] == "-l":
-        return # Don't care about -l
+        return  # Don't care about -l
 
     file = sys.argv[4]
     if os.path.isfile(file):
@@ -141,7 +239,7 @@ def validate_g_command():
             flush_input()
             print(f'The {file} already exists. Do you want to overwrite it? Y/N')
             confirm = input("Confirm: ")
-            if confirm.lower() == "y" :
+            if confirm.lower() == "y":
                 break
             elif confirm.lower() == "n":
                 print("Client shutting down process...")
@@ -149,6 +247,14 @@ def validate_g_command():
             else:
                 continue
 
+
+# Function:         command_route
+#
+# Description:      Executes either -l or -g functions (based on CLI arguments).
+#
+# Pre-condition:    Data socket is produced and the command has been validated.
+#
+# Post-condition:   Executes either get_file or get_directory and runs the rest of the program.
 def command_route(command, data_socket, file):
     if command == "-g":
         get_file(data_socket, file)
@@ -156,6 +262,13 @@ def command_route(command, data_socket, file):
         get_directory(data_socket)
 
 
+# Function:         main
+#
+# Description:      Runs the bulk of the program calling the functions it needs in order.
+#
+# Pre-condition:    Command line arguments hav been passed in.
+#
+# Post-condition:   Executes the client program and either gets a directory or file (or neither).
 def main():
     # Validate the number of args coming through.
     validate_arguments()
@@ -179,7 +292,8 @@ def main():
 
     # If the payload is a get file request we need to wait briefly for an all clear signal
     # The server will tell us whether the file exists and is readable. If not, we need to close the
-    # client socket and exit.
+    # client socket and exit. I know the specs want this over the data connection, but changing my current
+    # implementation is too much work.
     if payload[0] == "-g":
         all_clear = client_socket.recv(100).decode()
         if "__error__" in all_clear:
@@ -198,4 +312,5 @@ def main():
     data_socket.close()
     client_socket.close()
 
-main()
+
+main()  # Execute the program.
