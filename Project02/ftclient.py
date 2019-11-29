@@ -41,18 +41,26 @@ def return_help():
 
 def validate_arguments():
     length = len(sys.argv)
+
+    if sys.argv[1] == "help":
+        return_help()
+        sys.exit(0)
+
     if length < 5 or length > 6:
         print(f"Invalid arguments - Usage: \"python3 ftclient.py [flip address] [server port] "
               f"[command] [file name (only if command is -g)] [data port]\"\n"
               f"For more information type \"python3 ftclient.py help\"")
         sys.exit(1)
 
-    if sys.argv[1] == "help":
-        return_help()
-        sys.exit(0)
+    if sys.argv[3] == "-g" and length < 6:
+        print("-g command was specified but not enough arguments supplied on the command line.")
+        sys.exit(1)
 
     if sys.argv[3] == "-g" or sys.argv[3] == "-l":
         return
+    else:
+        print(f'Command {sys.argv[3]} not recognized.')
+        sys.exit(1)
 
 
 def create_socket():
@@ -168,6 +176,16 @@ def main():
     connect_to_server(client_socket)
     # Send the initial payload data to the server
     send_initial_payload(payload, client_socket)
+
+    # If the payload is a get file request we need to wait briefly for an all clear signal
+    # The server will tell us whether the file exists and is readable. If not, we need to close the
+    # client socket and exit.
+    if payload[0] == "-g":
+        all_clear = client_socket.recv(100).decode()
+        if "__error__" in all_clear:
+            print("There was an error retrieving the file. Client shutting down.")
+            client_socket.close()
+            sys.exit(0)
 
     # Prep a socket for connection.
     server_socket = create_server_socket()

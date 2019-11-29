@@ -115,16 +115,18 @@ int file_exists(struct data_info *data_arg) {
         printf("Server: File { %s } exists and is readable.\n", data_arg->file_name);
         return 1;
     }
-    printf("Server: File { %s } does not exists or cannot be read.\n", data_arg->file_name);
+    printf("Server: File { %s } does not exist or cannot be read.\n", data_arg->file_name);
     return 0;
 }
 
 void get_file(int *main_fd, struct sock_info *sock_arg, struct data_info *data_arg) {
     int exists = file_exists(data_arg);
     if (exists <= 0) {
+        write(*main_fd, "__error__", strlen("__error__"));
         return;
     }
-    // File exists so initiate the file transfer
+    write(*main_fd, "__found__", strlen("__found__"));
+    // File exists so initiate the connection and file transfer
     send_file(main_fd, sock_arg, data_arg);
 }
 
