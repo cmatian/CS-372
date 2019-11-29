@@ -22,7 +22,7 @@ char ** create_2d_array(int);
 void free_2d_array(char **, int);
 int file_exists(struct data_info *);
 void get_file(int *, struct sock_info *, struct data_info *);
-void send_file(int *, struct sock_info *, struct data_info *, char **, int);
+void send_file(int *, struct sock_info *, struct data_info *);
 int read_directory(char **);
 void send_directory(int *, struct sock_info *, struct data_info *, char **, int);
 void get_directory(int *, struct sock_info *, struct data_info *);

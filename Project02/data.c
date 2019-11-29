@@ -9,6 +9,7 @@
  * Last Modified:
  */
 
+#include <sys/fcntl.h>
 #include "data.h"
 #include "connection.h"
 
@@ -59,7 +60,7 @@ void setup_data_info(int *sock_fd, int payload_length, struct data_info *data_ar
     }
 }
 
-char ** create_2d_array(int length) {
+char **create_2d_array(int length) {
     char **array = malloc(length * sizeof(char *)); // Array of variable items
     for (int i = 0; i < length; i++) {
         array[i] = malloc(100 * sizeof(char)); // Set a char array inside of size 100
@@ -68,7 +69,7 @@ char ** create_2d_array(int length) {
     return array;
 }
 
-void free_2d_array(char ** storage, int length) {
+void free_2d_array(char **storage, int length) {
     int i = 0;
     while (i < length) {
         free(storage[i]);
@@ -109,8 +110,8 @@ void get_directory(int *main_fd, struct sock_info *sock_arg, struct data_info *d
     free_2d_array(storage, length);
 }
 
-int file_exists(struct data_info * data_arg) {
-    if(access(data_arg->file_name, F_OK | R_OK) != -1) {
+int file_exists(struct data_info *data_arg) {
+    if (access(data_arg->file_name, F_OK | R_OK) != -1) {
         printf("Server: File { %s } exists and is readable.\n", data_arg->file_name);
         return 1;
     }
@@ -118,18 +119,87 @@ int file_exists(struct data_info * data_arg) {
     return 0;
 }
 
-void get_file(int *main_fd, struct sock_info * sock_arg, struct data_info * data_arg) {
+void get_file(int *main_fd, struct sock_info *sock_arg, struct data_info *data_arg) {
     int exists = file_exists(data_arg);
-    if(exists < 1) {
+    if (exists <= 0) {
         return;
     }
+    // File exists so initiate the file transfer
+    send_file(main_fd, sock_arg, data_arg);
 }
 
-void send_file(int * main_fd, struct sock_info * sock_arg, struct data_info * data_arg, char ** storage, int length) {
+void send_file(int *main_fd, struct sock_info *sock_arg, struct data_info *data_arg) {
+    printf("Server: Preparing to send { %s } to the client...\n", data_arg->file_name);
+    /**
+     * Sleep for one second. During this pause client will send a "ready" message over the main_fd arg
+     * indicating that it is ready and listening for connections.
+     */
+    sleep(1);
+    char in_buffer[100] = "";
+    memset(in_buffer, '\0', sizeof(in_buffer));
+    /**
+     * Generate the connection. The client has to be LISTENING first before we can proceed. Otherwise
+     * the connection will not be established properly. Read from the main connection port.
+     */
+    while (1) {
+        read(*main_fd, in_buffer, sizeof(in_buffer));
+        if (strncmp(in_buffer, "ready", strlen("ready")) == 0) {
+            printf("Server: Client is ready - creating data connection.\n");
+            break;
+        }
+    }
 
+    /**
+     * Connect to the client using a similar process to when the main_fd socket was produced.
+     * The only difference is that we're using connect() and not bind(). Additionally, we don't need
+     * the listen() function - the client is the listener.
+     */
+    struct addrinfo *p = get_address_info(sock_arg);
+    int sockfd = socket_setup(p, 1); // Second param = try to connect to client on data port (don't bind).
+
+    if (p == NULL || sockfd < 0) {
+        close(sockfd);
+        fprintf(stderr, "Server: Failed to connect back to the client at %s on  data port %s.\n", data_arg->address,
+                data_arg->port);
+        exit(1);
+    }
+    printf("Server: Successfully connected back to the client at %s on data port %s.\n", data_arg->address,
+           data_arg->port);
+
+    int open_file = open(data_arg->file_name, O_RDONLY);
+    while(1) {
+        char write_buffer[1000] = "";
+        int bytes_read = read(open_file, write_buffer, sizeof(write_buffer));
+        if(bytes_read == 0) {
+            break; // done reading
+        }
+
+        if(bytes_read < 0) {
+            close(sockfd);
+            fprintf(stderr, "Server: Fatal error during read operation.");
+            return;
+        }
+
+        void * write_ptr = write_buffer;
+        while(bytes_read > 0) {
+            int bytes_written = write(sockfd, write_ptr, bytes_read);
+            if(bytes_written <= 0) {
+                close(sockfd);
+                fprintf(stderr, "Server: Fatal error during write operation.");
+                return;
+            }
+            bytes_read -= bytes_written;
+            write_ptr += bytes_written;
+        }
+        memset(write_buffer, '\0', sizeof(write_buffer)); // refresh our buffer
+    }
+    // Send a complete message
+    write(sockfd, "__complete__", strlen("__complete__"));
+    printf("Server: File transfer complete.\n");
+    close(sockfd); // Close out the data socket
 }
 
-void send_directory(int * main_fd, struct sock_info * sock_arg, struct data_info * data_arg, char ** storage, int length) {
+void send_directory(int *main_fd, struct sock_info *sock_arg, struct data_info *data_arg, char **storage, int length) {
     printf("Server: Preparing to send directory to the client...\n");
     /**
      * Sleep for one second. During this pause client will send a "ready" message over the main_fd arg
@@ -164,10 +234,11 @@ void send_directory(int * main_fd, struct sock_info * sock_arg, struct data_info
                 data_arg->port);
         exit(1);
     }
-    printf("Server: Successfully connected back to the client at %s on data port %s.\n", data_arg->address, data_arg->port);
+    printf("Server: Successfully connected back to the client at %s on data port %s.\n", data_arg->address,
+           data_arg->port);
 
     /**
-     * Perform the file transfer and send the directory files over. I am throttling the loop with a brief pause (150ms)
+     * Perform the file transfer and send the directory. I am throttling the loop with a brief pause (150ms)
      * because of newline issues on the client. The transfer happens so fast that the client fails to append newlines
      * and causes the directory to appear on one line. 150ms gives enough time for the client read loop to complete and
      * be ready for the next server write.
@@ -189,7 +260,7 @@ void data_command_router(int *main_fd, struct sock_info *sock_arg, struct data_i
         // Command is "-l" (Get Directory)
         printf("Server: Client requested the current directory listing.\n");
         get_directory(main_fd, sock_arg, data_arg);
-    } else if(strncmp(data_arg->command, "-g", strlen("-g")) == 0) {
+    } else if (strncmp(data_arg->command, "-g", strlen("-g")) == 0) {
         // Command is "-g" (Get File)
         printf("Server: Client requested a file: { %s }.\n", data_arg->file_name);
         get_file(main_fd, sock_arg, data_arg);
